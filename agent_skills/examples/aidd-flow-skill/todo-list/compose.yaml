@@ -1,0 +1,18 @@
+services:
+  web:
+    build:
+      context: .
+    command: >-
+      sh -c "uv run python manage.py migrate &&
+      uv run python manage.py runserver 0.0.0.0:8000"
+    environment:
+      DJANGO_ALLOWED_HOSTS: ${DJANGO_ALLOWED_HOSTS:-}
+      SQLITE_PATH: /data/db.sqlite3
+    ports:
+      - "${TODO_PORT:-8000}:8000"
+    volumes:
+      - .:/app
+      - todo_data:/data
+
+volumes:
+  todo_data:

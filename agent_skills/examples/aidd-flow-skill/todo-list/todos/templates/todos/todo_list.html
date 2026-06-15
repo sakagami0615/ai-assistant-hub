@@ -1,0 +1,80 @@
+{% load static %}
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ToDo List</title>
+  <link rel="stylesheet" href="{% static 'todos/styles.css' %}">
+</head>
+<body>
+  <main class="page-shell">
+    <header class="page-header">
+      <p class="eyebrow">MY TASKS</p>
+      <h1>ToDo List</h1>
+      <p>今日やることを、ひとつずつ前へ。</p>
+    </header>
+
+    <section class="panel" aria-labelledby="add-heading">
+      <h2 id="add-heading">新しいToDo</h2>
+      <form method="post" class="create-form">
+        {% csrf_token %}
+        <label for="{{ form.title.id_for_label }}">タイトル</label>
+        <div class="create-row">
+          {{ form.title }}
+          <button type="submit" class="button button-primary">追加</button>
+        </div>
+        {% if form.title.errors %}
+          <div class="form-errors" role="alert">
+            {{ form.title.errors }}
+          </div>
+        {% endif %}
+      </form>
+    </section>
+
+    <section class="panel" aria-labelledby="list-heading">
+      <div class="list-heading">
+        <h2 id="list-heading">ToDo一覧</h2>
+        <span class="count">{{ todos|length }}件</span>
+      </div>
+
+      {% if todos %}
+        <ul class="todo-list">
+          {% for todo in todos %}
+            <li class="todo-card status-{{ todo.status|lower }}">
+              <div class="todo-copy">
+                <strong>{{ todo.title }}</strong>
+                <span class="created-at">{{ todo.created_at|date:"Y/m/d H:i" }}</span>
+              </div>
+
+              <div class="todo-actions">
+                <form method="post" action="{% url 'todos:update_status' todo.pk %}" class="status-form">
+                  {% csrf_token %}
+                  <label class="sr-only" for="status-{{ todo.pk }}">{{ todo.title }}のステータス</label>
+                  <select id="status-{{ todo.pk }}" name="status">
+                    {% for value, label in status_choices %}
+                      <option value="{{ value }}"{% if todo.status == value %} selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                  </select>
+                  <button type="submit" class="button button-secondary">更新</button>
+                </form>
+
+                <form method="post" action="{% url 'todos:delete' todo.pk %}">
+                  {% csrf_token %}
+                  <button type="submit" class="button button-danger" aria-label="{{ todo.title }}を削除">削除</button>
+                </form>
+              </div>
+            </li>
+          {% endfor %}
+        </ul>
+      {% else %}
+        <div class="empty-state">
+          <p>ToDoはまだありません。</p>
+          <span>上のフォームから最初のToDoを追加してください。</span>
+        </div>
+      {% endif %}
+    </section>
+  </main>
+</body>
+</html>
+
