@@ -1,6 +1,6 @@
 # Claude Code with Ollama
 
-`docs/deepresearch/20260720_Ollamaでの開発ツール連携調査.md` の内容をもとに、Claude Code をローカル Ollama のモデルへ切り替えて使うための最小環境です。
+Claude Code をローカル Ollama のモデルへ切り替えて使うための最小環境です。
 
 ## 構成
 
