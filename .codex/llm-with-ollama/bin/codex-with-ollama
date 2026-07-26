@@ -1,0 +1,43 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+MODEL="default"
+args=()
+
+while [ $# -gt 0 ]; do
+  case "$1" in
+    --modelfile)
+      MODEL="$2"
+      shift 2
+      ;;
+    --modelfile=*)
+      MODEL="${1#--modelfile=}"
+      shift
+      ;;
+    *)
+      args+=("$1")
+      shift
+      ;;
+  esac
+done
+
+MODELFILE="$ROOT_DIR/models/$MODEL.modelfile"
+if [ ! -f "$MODELFILE" ]; then
+  echo "error: modelfile not found: $MODELFILE" >&2
+  echo "usage: $(basename "$0") [--modelfile MODEL_NAME] [codex args...]" >&2
+  echo "  looks up models/<MODEL_NAME>.modelfile relative to this script" >&2
+  echo "  the Ollama model must already exist: ollama create $MODEL -f $MODELFILE" >&2
+  exit 1
+fi
+
+BASE_URL="${OLLAMA_BASE_URL:-http://localhost:11434/v1}"
+PROVIDER_ID="ollama-local"
+
+exec codex \
+  -c model_provider=\""$PROVIDER_ID"\" \
+  -c model_providers."$PROVIDER_ID".name=\"Ollama\" \
+  -c model_providers."$PROVIDER_ID".base_url=\""$BASE_URL"\" \
+  -c model_providers."$PROVIDER_ID".wire_api=\"responses\" \
+  -m "$MODEL" \
+  "${args[@]}"

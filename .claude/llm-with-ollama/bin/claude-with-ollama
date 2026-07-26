@@ -1,0 +1,40 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+MODEL="default"
+args=()
+
+while [ $# -gt 0 ]; do
+  case "$1" in
+    --modelfile)
+      MODEL="$2"
+      shift 2
+      ;;
+    --modelfile=*)
+      MODEL="${1#--modelfile=}"
+      shift
+      ;;
+    *)
+      args+=("$1")
+      shift
+      ;;
+  esac
+done
+
+MODELFILE="$ROOT_DIR/models/$MODEL.modelfile"
+if [ ! -f "$MODELFILE" ]; then
+  echo "error: modelfile not found: $MODELFILE" >&2
+  echo "usage: $(basename "$0") [--modelfile MODEL_NAME] [claude args...]" >&2
+  echo "  looks up models/<MODEL_NAME>.modelfile relative to this script" >&2
+  echo "  the Ollama model must already exist: ollama create $MODEL -f $MODELFILE" >&2
+  exit 1
+fi
+
+BASE_URL="${ANTHROPIC_BASE_URL:-http://localhost:11434}"
+
+export ANTHROPIC_AUTH_TOKEN="${ANTHROPIC_AUTH_TOKEN:-ollama}"
+export ANTHROPIC_API_KEY="${ANTHROPIC_API_KEY:-}"
+export ANTHROPIC_BASE_URL="$BASE_URL"
+
+exec claude --model "$MODEL" "${args[@]}"
