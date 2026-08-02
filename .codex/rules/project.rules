@@ -1,0 +1,119 @@
+prefix_rule(
+    pattern = ["sudo"],
+    decision = "forbidden",
+    justification = "管理者権限での実行は禁止しています。",
+)
+
+prefix_rule(
+    pattern = ["aws"],
+    decision = "forbidden",
+    justification = "AWS操作は禁止しています。",
+)
+
+prefix_rule(
+    pattern = ["curl"],
+    decision = "forbidden",
+    justification = "外部URL経由のシェル実行は禁止しています。",
+)
+
+prefix_rule(
+    pattern = ["wget"],
+    decision = "forbidden",
+    justification = "外部URL経由のシェル実行は禁止しています。",
+)
+
+prefix_rule(
+    pattern = ["cat", ".env"],
+    decision = "forbidden",
+    justification = "環境変数ファイルの読み取りは禁止しています。",
+)
+
+prefix_rule(
+    pattern = ["cat", ".env.*"],
+    decision = "forbidden",
+    justification = "環境変数ファイルの読み取りは禁止しています。",
+)
+
+prefix_rule(
+    pattern = ["grep", ".env"],
+    decision = "forbidden",
+    justification = "環境変数ファイルの読み取りは禁止しています。",
+)
+
+prefix_rule(
+    pattern = ["grep", ".env.*"],
+    decision = "forbidden",
+    justification = "環境変数ファイルの読み取りは禁止しています。",
+)
+
+prefix_rule(
+    pattern = [["kubectl", "helm"]],
+    decision = "forbidden",
+    justification = "Kubernetes操作は禁止しています。",
+)
+
+prefix_rule(
+    pattern = ["git", "push", "--force"],
+    decision = "forbidden",
+    justification = "強制pushは履歴を上書きするため禁止しています。緊急時も --force-with-lease の使用を検討してください。",
+)
+
+prefix_rule(
+    pattern = ["git", "push"],
+    decision = "prompt",
+    justification = "リモートリポジトリを変更するため確認します。",
+)
+
+prefix_rule(
+    pattern = ["git", "reset", "--hard"],
+    decision = "forbidden",
+    justification = "変更を失う可能性があるため禁止しています。",
+)
+
+prefix_rule(
+    pattern = ["git", "clean"],
+    decision = "prompt",
+    justification = "未追跡ファイルを削除する可能性があります。",
+)
+
+prefix_rule(
+    pattern = ["git", ["status", "diff", "log"]],
+    decision = "allow",
+    justification = "読み取り専用のGit操作です。",
+)
+
+prefix_rule(
+    pattern = ["git", "check-ignore"],
+    decision = "allow",
+    justification = "Gitの読み取り専用チェック操作です。",
+)
+
+prefix_rule(
+    pattern = ["dpkg", "-l"],
+    decision = "allow",
+    justification = "パッケージリストの読み取りを許可します。",
+)
+
+prefix_rule(
+    pattern = ["apt", "list"],
+    decision = "allow",
+    justification = "パッケージリストの読み取りを許可します。",
+)
+
+prefix_rule(
+    pattern = ["make", ["test", "lint", "format", "build", "check"]],
+    decision = "allow",
+    justification = "プロジェクトで定義された開発タスクです。",
+)
+
+prefix_rule(
+    pattern = ["python3"],
+    decision = "allow",
+    justification = "ワークスペース内のPython実行を開発タスクとして許可します。",
+)
+
+prefix_rule(
+    pattern = ["pytest"],
+    decision = "allow",
+    justification = "テスト実行を自動化します。",
+)

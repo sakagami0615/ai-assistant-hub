@@ -1,0 +1,44 @@
+{
+  "permissions": {
+    "allow": [
+      "Skill(update-config)",
+      "Skill(update-config:*)",
+      "Bash(make test)",
+      "Bash(make lint)",
+      "Bash(make format)",
+      "Bash(make check)",
+      "Bash(git check-ignore *)",
+      "Bash(git status *)",
+      "Bash(git diff *)",
+      "Bash(git log *)",
+      "Bash(dpkg -l)",
+      "Bash(apt list *)",
+      "Bash(echo \"exit:$?\")",
+      "Bash(python3 *)",
+      "Bash(pytest *)"
+    ],
+    "ask": [
+      "Bash(git push *)",
+      "Bash(git clean -fd*)"
+    ],
+    "deny": [
+      "Bash(sudo *)",
+      "Bash(git push *--force*)",
+      "Bash(git reset --hard *)",
+      "Bash(curl *|*sh*)",
+      "Bash(wget *|*sh*)",
+      "Bash(aws *)",
+      "Bash(kubectl *)",
+      "Bash(helm *)",
+      "Read(./.env)",
+      "Read(./.env.*)",
+      "Read(./secrets/**)"
+    ],
+    "defaultMode": "acceptEdits"
+  },
+  "sandbox": {
+    "enabled": true,
+    "autoAllowBashIfSandboxed": true,
+    "allowUnsandboxedCommands": false
+  }
+}
