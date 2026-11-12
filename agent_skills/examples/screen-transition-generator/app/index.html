@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <title>サポートチャット（デモ）</title>
+  <link rel="stylesheet" href="/styles.css">
+  <script src="/config.js"></script>
+</head>
+<body>
+  <header>
+    <h1>サポートチャット</h1>
+    <nav>
+      <a href="/settings.html">設定</a>
+      <a id="help-link" href="#">ヘルプ</a>
+      <a id="terms-link" href="#" target="_blank" rel="noopener">利用規約</a>
+      <button type="button" id="about">このアプリについて</button>
+      <button type="button" id="new-chat">新しいチャット</button>
+      <button type="button" id="clear" class="danger">履歴を削除</button>
+    </nav>
+    <span class="clock" aria-hidden="true"></span>
+  </header>
+  <main>
+    <div id="messages" aria-live="polite"></div>
+  </main>
+  <footer><a href="mailto:support@example.invalid">お問い合わせ</a></footer>
+  <form class="composer" id="composer">
+    <input type="text" id="input" aria-label="メッセージ" placeholder="メッセージを入力（例: デモ開始）" autocomplete="off">
+    <button type="submit">送信</button>
+  </form>
+  <div id="dialog-root"></div>
+  <script src="/app.js"></script>
+</body>
+</html>

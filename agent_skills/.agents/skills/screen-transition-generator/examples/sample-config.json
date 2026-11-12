@@ -1,0 +1,24 @@
+{
+  "baseUrl": "http://localhost:18080",
+  "start": { "url": "/" },
+  "viewport": { "width": 1920, "height": 1080 },
+  "actionRoots": [
+    "header",
+    "footer",
+    { "selector": "#messages .message.bot", "pick": "last" },
+    "[role=dialog]",
+    "main .page"
+  ],
+  "ignoreSelectors": [".clock", ".timestamp"],
+  "loadingSelectors": [".loading"],
+  "scenarios": [
+    {
+      "name": "固定テキスト「デモ開始」",
+      "from": "start",
+      "steps": [
+        { "fill": { "role": "textbox", "name": "メッセージ" }, "text": "デモ開始" },
+        { "click": { "role": "button", "name": "送信" } }
+      ]
+    }
+  ]
+}

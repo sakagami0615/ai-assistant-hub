@@ -1,0 +1,27 @@
+* { box-sizing: border-box; }
+body { margin: 0; font-family: "Noto Sans JP", "Hiragino Sans", "Yu Gothic", sans-serif; background: #f4f6fb; color: #1f2933; font-size: 18px; }
+header { position: sticky; top: 0; z-index: 10; display: flex; align-items: center; gap: 16px; padding: 14px 32px; background: #1e3a8a; color: #fff; }
+header h1 { margin: 0 24px 0 0; font-size: 26px; }
+header nav { display: flex; gap: 12px; align-items: center; flex: 1; }
+header a, header button { color: #fff; background: rgba(255,255,255,.12); border: 1px solid rgba(255,255,255,.35); border-radius: 8px; padding: 8px 14px; font-size: 16px; text-decoration: none; cursor: pointer; }
+header button.danger { background: #b91c1c; border-color: #fecaca; }
+.clock { font-variant-numeric: tabular-nums; opacity: .85; }
+main { max-width: 1100px; margin: 0 auto; padding: 24px 32px 160px; }
+.message { display: flex; flex-direction: column; gap: 8px; margin: 16px 0; max-width: 80%; }
+.message.user { margin-left: auto; align-items: flex-end; }
+.bubble { padding: 14px 18px; border-radius: 14px; line-height: 1.7; white-space: pre-wrap; }
+.bot .bubble { background: #fff; border: 1px solid #d5dbe8; }
+.user .bubble { background: #2563eb; color: #fff; }
+.timestamp { font-size: 13px; color: #6b7280; }
+.recommendations { display: flex; flex-wrap: wrap; gap: 10px; }
+.recommendations button { background: #ecfdf5; color: #065f46; border: 2px solid #10b981; border-radius: 999px; padding: 10px 18px; font-size: 17px; cursor: pointer; }
+.loading { color: #6b7280; font-style: italic; }
+.composer { position: fixed; left: 0; right: 0; bottom: 0; display: flex; gap: 12px; justify-content: center; padding: 18px; background: #fff; border-top: 1px solid #d5dbe8; }
+.composer input { width: 640px; font-size: 18px; padding: 12px; border: 1px solid #9aa5b8; border-radius: 10px; }
+.composer button { font-size: 18px; padding: 12px 24px; border-radius: 10px; border: none; background: #1e3a8a; color: #fff; }
+footer { position: fixed; right: 24px; bottom: 90px; font-size: 14px; }
+.overlay { position: fixed; inset: 0; background: rgba(15, 23, 42, .5); display: flex; align-items: center; justify-content: center; z-index: 20; }
+.dialog { background: #fff; padding: 32px 40px; border-radius: 16px; width: 560px; line-height: 1.8; }
+.dialog button { font-size: 17px; padding: 10px 20px; border-radius: 8px; border: 1px solid #1e3a8a; background: #fff; color: #1e3a8a; }
+.page { background: #fff; border: 1px solid #d5dbe8; border-radius: 14px; padding: 32px 40px; line-height: 1.9; }
+.page a, .page button { display: inline-block; margin-top: 12px; margin-right: 12px; font-size: 17px; padding: 10px 18px; border-radius: 8px; border: 1px solid #1e3a8a; color: #1e3a8a; background: #fff; text-decoration: none; }
