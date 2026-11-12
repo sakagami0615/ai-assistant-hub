@@ -1,0 +1,15 @@
+{
+  "name": "screen-transition-generator-scripts",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "画面遷移図自動生成スキルの補助スクリプト",
+  "engines": { "node": ">=20" },
+  "bin": { "stg": "./stg.mjs" },
+  "scripts": {
+    "test": "node --test --test-concurrency=1 'test/**/*.test.mjs'"
+  },
+  "dependencies": {
+    "playwright": "1.62.1"
+  }
+}

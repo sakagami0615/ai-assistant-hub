@@ -1,0 +1,26 @@
+# screen-transition-generator お試し用モックアプリ
+#   app      : チャット形式の SPA（http://localhost:18080）
+#   external : 「外部サイト」役の静的サイト（http://localhost:18081）
+services:
+  app:
+    image: nginx:1.27-alpine
+    ports:
+      - "${STG_APP_PORT:-18080}:80"
+    volumes:
+      - ./app:/usr/share/nginx/html:ro
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1/"]
+      interval: 2s
+      timeout: 2s
+      retries: 15
+  external:
+    image: nginx:1.27-alpine
+    ports:
+      - "${STG_EXTERNAL_PORT:-18081}:80"
+    volumes:
+      - ./external:/usr/share/nginx/html:ro
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1/"]
+      interval: 2s
+      timeout: 2s
+      retries: 15
