@@ -24,6 +24,7 @@
 | `limits.maxDurationSec` | number | 1800 | 最大実行時間（秒） |
 | `limits.actionTimeoutMs` | number | 10000 | 1 操作あたりのタイムアウト（クリック・表示安定待ち） |
 | `display.scale` | number | 0.5 | draw.io 上の表示倍率（0〜1）。画像は原寸で埋め込むため拡大すれば読める |
+| `display.maxColumns` | number | 3 | 1 行に並べる画面の最大数。超える層は次の行へ折り返す（上から下の流れを優先） |
 | `display.collapseCommonActions` | boolean | true | 共通ナビゲーションの矢印を代表 1 本に集約し、残りを非表示レイヤーへ |
 | `quietMs` | number | 400 | DOM が何ミリ秒変化しなければ「表示が安定した」とみなすか |
 | `connectTimeoutSec` | number | 30 | `baseUrl` への接続待ち（秒） |

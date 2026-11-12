@@ -4,16 +4,16 @@ import { join } from 'node:path';
 import { StgError } from './errors.mjs';
 import { Graph } from './graph.mjs';
 import { layoutGraph } from './layout.mjs';
-import { buildDrawio, collapseCommonActions } from './drawio.mjs';
+import { buildDrawio, collapseCommonActions, edgeLabel } from './drawio.mjs';
 import { renderSummary } from './output.mjs';
 
 export const DRAWIO_NAME = 'screen-transition.drawio';
 
 /**
  * @param {string} outDir
- * @param {{scale: number, collapseCommonActions?: boolean, archivedTo?: string|null}} opts
+ * @param {{scale: number, maxColumns?: number, collapseCommonActions?: boolean, archivedTo?: string|null}} opts
  */
-export async function generate(outDir, { scale, collapseCommonActions: collapse = true, archivedTo = null }) {
+export async function generate(outDir, { scale, maxColumns, collapseCommonActions: collapse = true, archivedTo = null }) {
   let graph;
   try {
     graph = Graph.fromJSON(JSON.parse(await readFile(join(outDir, 'graph.json'), 'utf8')));
@@ -37,7 +37,9 @@ export async function generate(outDir, { scale, collapseCommonActions: collapse 
   await writeFile(join(outDir, 'graph.json'), `${JSON.stringify(graph.toJSON(), null, 2)}\n`);
   let xml;
   try {
-    xml = buildDrawio(graph, layoutGraph(graph, { scale }), images, common);
+    const visible = new Set(graph.transitions.filter((t) => !common.collapsed.has(t.id)).map((t) => t.id));
+    const labels = new Map(graph.transitions.map((t) => [t.id, edgeLabel(t, common.representatives)]));
+    xml = buildDrawio(graph, layoutGraph(graph, { scale, maxColumns, visible, labels }), images, common);
   } catch (e) {
     throw new StgError('DRAWIO_FAILED', { where: 'draw.io XML 生成', message: e.message });
   }

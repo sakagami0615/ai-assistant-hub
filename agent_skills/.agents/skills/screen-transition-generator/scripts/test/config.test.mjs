@@ -17,6 +17,7 @@ test('最小構成に既定値を補う', () => {
   assert.equal(c.limits.actionTimeoutMs, 10000);
   assert.equal(c.display.scale, 0.5);
   assert.equal(c.display.collapseCommonActions, true);
+  assert.equal(c.display.maxColumns, 3);
   assert.equal(c.quietMs, DEFAULTS.quietMs);
 });
 
@@ -59,6 +60,8 @@ const invalid = [
   ['fill に text なし', { baseUrl: 'http://a', start: { steps: [{ fill: { role: 'textbox', name: 'x' } }] } }],
   ['scenario from が start 以外', { baseUrl: 'http://a', scenarios: [{ name: 's', from: 'x', steps: [] }] }],
   ['scale が範囲外', { baseUrl: 'http://a', display: { scale: 0 } }],
+  ['maxColumns が 0', { baseUrl: 'http://a', display: { maxColumns: 0 } }],
+  ['display の未知キー', { baseUrl: 'http://a', display: { zoom: 1 } }],
 ];
 for (const [name, raw] of invalid) {
   test(`不正: ${name}`, () => {

@@ -15,9 +15,12 @@ export function exitPoint(action, image) {
   return { x: round4(clamp01(cx / image.width)), y: round4(clamp01(cy / image.height)) };
 }
 
-const SCREEN_STYLE = 'shape=image;imageAspect=0;aspect=fixed;verticalLabelPosition=bottom;verticalAlign=top;labelBackgroundColor=#ffffff;fontSize=16;fontStyle=1;imageBorder=#666666;strokeWidth=2;';
+const SCREEN_STYLE = 'shape=image;imageAspect=0;aspect=fixed;verticalLabelPosition=bottom;verticalAlign=top;whiteSpace=wrap;html=1;labelBackgroundColor=#ffffff;fontStyle=1;imageBorder=#666666;strokeWidth=2;';
 const EXTERNAL_STYLE = 'imageBorder=#999999;dashed=1;fontColor=#666666;';
-const EDGE_STYLE = 'edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;html=1;strokeWidth=2;strokeColor=#d6336c;fontSize=14;labelBackgroundColor=#ffffff;startArrow=oval;startFill=1;startSize=10;endArrow=block;endFill=1;';
+const EDGE_STYLE = 'rounded=1;html=1;strokeWidth=3;strokeColor=#d6336c;labelBackgroundColor=#ffffff;spacing=4;startArrow=oval;startFill=1;startSize=12;endArrow=block;endFill=1;';
+const AUTO_ROUTE = 'edgeStyle=orthogonalEdgeStyle;orthogonalLoop=1;';
+const FIXED_ROUTE = 'edgeStyle=none;';
+const DEFAULT_FONTS = { screen: 16, edge: 14 };
 
 /**
  * 共通ナビゲーションの集約（設計 Q31）。同じ (role, label, 遷移先) の矢印が複数の画面から出ている場合、
@@ -44,6 +47,12 @@ export function collapseCommonActions(graph) {
 
 const COMMON_LAYER = 'layer-common';
 
+/** 図に表示する矢印ラベル（代表矢印には省略件数を付ける）。レイアウトのラベル幅計算と共通 */
+export function edgeLabel(t, representatives = new Map()) {
+  const others = representatives.get(t.id);
+  return `${t.action.label ?? ''}${others ? `（他 ${others} 画面からも）` : ''}`;
+}
+
 /**
  * @param {{screens: any[], transitions: any[]}} graph
  * @param {{nodes: Record<string, {x:number,y:number,w:number,h:number}>, backEdges: Set<string>}} layout
@@ -52,13 +61,15 @@ const COMMON_LAYER = 'layer-common';
  */
 export function buildDrawio(graph, layout, images, common = {}) {
   const collapsed = common.collapsed ?? new Set();
+  const fonts = layout.fonts ?? DEFAULT_FONTS;
+  const routes = layout.routes ?? new Map();
   const representatives = common.representatives ?? new Map();
   const cells = ['<mxCell id="0"/>', '<mxCell id="1" parent="0"/>'];
   for (const s of graph.screens) {
     const b64 = images[s.id];
     if (!b64) throw new Error(`画像データがありません: ${s.id}`);
     const n = layout.nodes[s.id];
-    const style = `${SCREEN_STYLE}${s.external ? EXTERNAL_STYLE : ''}image=data:image/png,${b64};`;
+    const style = `${SCREEN_STYLE}fontSize=${fonts.screen};${s.external ? EXTERNAL_STYLE : ''}image=data:image/png,${b64};`;
     cells.push(
       `<mxCell id="${escapeXml(s.id)}" value="${escapeXml(s.name)}" style="${style}" vertex="1" parent="1">` +
         `<mxGeometry x="${n.x}" y="${n.y}" width="${n.w}" height="${n.h}" as="geometry"/></mxCell>`,
@@ -70,13 +81,18 @@ export function buildDrawio(graph, layout, images, common = {}) {
     const src = byId.get(t.from);
     if (!src || !byId.get(t.to)) throw new Error(`遷移の画面が存在しません: ${t.id}`);
     const p = exitPoint(t.action, src.image);
-    const style = `${EDGE_STYLE}exitX=${p.x};exitY=${p.y};exitDx=0;exitDy=0;exitPerimeter=0;${layout.backEdges.has(t.id) ? 'dashed=1;' : ''}`;
-    const others = representatives.get(t.id);
-    const label = `${t.action.label ?? ''}${others ? `（他 ${others} 画面からも）` : ''}`;
+    // 経路が計算済みの矢印は、他の画面を通らないウェイポイントをそのまま通らせる（draw.io に再ルーティングさせない）
+    const route = collapsed.has(t.id) ? null : routes.get(t.id);
+    const entry = route ? `entryX=${route.entryX};entryY=${route.entryY};entryDx=0;entryDy=0;entryPerimeter=0;` : '';
+    const style = `${EDGE_STYLE}${route ? FIXED_ROUTE : AUTO_ROUTE}fontSize=${fonts.edge};exitX=${p.x};exitY=${p.y};exitDx=0;exitDy=0;exitPerimeter=0;${entry}${layout.backEdges.has(t.id) ? 'dashed=1;' : ''}`;
+    const geometry = route
+      ? `<mxGeometry relative="1" x="${route.labelRel}" as="geometry"><Array as="points">${route.points.map((q) => `<mxPoint x="${q.x}" y="${q.y}"/>`).join('')}</Array></mxGeometry>`
+      : '<mxGeometry relative="1" as="geometry"/>';
+    const label = edgeLabel(t, representatives);
     const parent = collapsed.has(t.id) ? COMMON_LAYER : '1';
     (collapsed.has(t.id) ? hidden : cells).push(
       `<mxCell id="${escapeXml(t.id)}" value="${escapeXml(label)}" style="${style}" edge="1" parent="${parent}" source="${escapeXml(t.from)}" target="${escapeXml(t.to)}">` +
-        '<mxGeometry relative="1" as="geometry"/></mxCell>',
+        `${geometry}</mxCell>`,
     );
   }
   // レイヤーは参照する edge より前に置く（既定レイヤー "1" の直後）

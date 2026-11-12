@@ -97,3 +97,26 @@ test('省略された矢印は非表示レイヤーに置き、代表矢印の�
 test('省略が無ければレイヤーを作らない', () => {
   assert.doesNotMatch(buildDrawio(graph, layout, images), /layer-common/);
 });
+
+test('経路付きの矢印は edgeStyle=none・ウェイポイント・入口座標を明示し、文字サイズはレイアウトに従う', () => {
+  const routed = {
+    ...layout,
+    fonts: { screen: 29, edge: 21 },
+    routes: new Map([['transition-001', {
+      exit: { x: 480, y: 540 }, entry: { x: 288, y: 800 }, entryX: 0.3, entryY: 0,
+      points: [{ x: 480, y: 640 }, { x: 288, y: 640 }], label: { x: 0, y: 0, w: 10, h: 10 }, labelRel: -0.5,
+    }]]),
+  };
+  const xml = buildDrawio(graph, routed, images);
+  const e = xml.match(/<mxCell id="transition-001"[\s\S]*?<\/mxCell>/)[0];
+  assert.match(e, /edgeStyle=none;/);
+  assert.doesNotMatch(e, /orthogonalEdgeStyle/);
+  assert.match(e, /entryX=0\.3;entryY=0;entryDx=0;entryDy=0;entryPerimeter=0;/);
+  assert.match(e, /fontSize=21;/);
+  assert.match(e, /<mxGeometry relative="1" x="-0\.5" as="geometry"><Array as="points"><mxPoint x="480" y="640"\/><mxPoint x="288" y="640"\/><\/Array><\/mxGeometry>/);
+  const s = xml.match(/<mxCell id="screen-001"[^>]*>/)[0];
+  assert.match(s, /fontSize=29;/);
+  assert.match(s, /whiteSpace=wrap;/);
+  // 経路の無い矢印（非表示レイヤー等）は従来どおり draw.io の自動ルーティング
+  assert.match(xml.match(/<mxCell id="transition-002"[^>]*>/)[0], /edgeStyle=orthogonalEdgeStyle/);
+});

@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { layoutGraph } from '../lib/layout.mjs';
 
 const scr = (id, depth, w = 1920, h = 1080) => ({ id, depth, image: { width: w, height: h } });
-const tr = (id, from, to) => ({ id, from, to });
+const tr = (id, from, to) => ({ id, from, to, action: { x: 100, y: 100, width: 10, height: 10 } });
 
 function overlaps(a, b) {
   return a.x < b.x + b.w && b.x < a.x + a.w && a.y < b.y + b.h && b.y < a.y + a.h;

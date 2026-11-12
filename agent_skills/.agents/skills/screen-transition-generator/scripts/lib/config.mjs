@@ -5,7 +5,7 @@ import { StgError } from './errors.mjs';
 export const DEFAULTS = Object.freeze({
   viewport: { width: 1920, height: 1080 },
   limits: { maxScreens: 50, maxTransitions: 200, maxDepth: 10, maxDurationSec: 1800, actionTimeoutMs: 10000 },
-  display: { scale: 0.5, collapseCommonActions: true },
+  display: { scale: 0.5, maxColumns: 3, collapseCommonActions: true },
   quietMs: 400,
   connectTimeoutSec: 30,
 });
@@ -110,6 +110,7 @@ export function normalizeConfig(raw) {
   if (!isPlainObject(displayRaw)) fail('display', 'オブジェクトを指定してください');
   for (const k of Object.keys(displayRaw)) if (!(k in DEFAULTS.display)) fail(`display.${k}`, `未知のキーです: ${k}`);
   if (typeof display.scale !== 'number' || display.scale <= 0 || display.scale > 1) fail('display.scale', '0 より大きく 1 以下の数値を指定してください');
+  if (!Number.isInteger(display.maxColumns) || display.maxColumns < 1) fail('display.maxColumns', '1 以上の整数を指定してください');
   if (typeof display.collapseCommonActions !== 'boolean') fail('display.collapseCommonActions', 'true / false を指定してください');
 
   const origins = new Set([new URL(startUrl).origin, new URL(baseUrl).origin]);

@@ -93,7 +93,7 @@ async function main(argv) {
     }
 
     if (cmd === 'generate' || cmd === 'run') {
-      const r = await generate(outDir, { scale: cfg.display.scale, collapseCommonActions: cfg.display.collapseCommonActions, archivedTo });
+      const r = await generate(outDir, { scale: cfg.display.scale, maxColumns: cfg.display.maxColumns, collapseCommonActions: cfg.display.collapseCommonActions, archivedTo });
       process.stdout.write(`${JSON.stringify({ status: 'ok', outDir, ...r }, null, 2)}\n`);
     } else {
       process.stdout.write(`${JSON.stringify({ status: 'ok', outDir, graph: join(outDir, 'graph.json'), screens: graph.screens.length, transitions: graph.transitions.length }, null, 2)}\n`);
