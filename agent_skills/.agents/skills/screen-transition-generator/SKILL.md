@@ -71,7 +71,7 @@ Node.js 20 以上が必要。
 
 ### ② アプリケーション構成の調査（読み取りのみ）
 
-次を確認する。詳細は `references/exploration-rules.md`。
+次を確認する。詳細は `exploration-rules.md`。
 
 - Docker Compose 構成（サービス名・公開ポート・healthcheck）
 - ルーティング定義、画面コンポーネント
@@ -93,7 +93,7 @@ docker compose up -d --wait       # 未起動の場合（healthcheck が無け�
 
 ### ④ config.json の作成
 
-`<run_dir>/screen-transition-generator/config.json` を作成する。仕様は `references/config.md`、例は `examples/sample-config.json`。
+`<run_dir>/screen-transition-generator/config.json` を作成する。仕様は `config.md`、例は `assets/templates/config.json`。
 
 - `baseUrl` / `start`（開始 URL と、開始画面に到達するための事前操作）
 - `actionRoots`: 探索対象の領域。チャットでは「最新のボットメッセージ」を `{ "selector": "...", "pick": "last" }` で指定し、過去メッセージのボタンを対象外にする
@@ -125,7 +125,7 @@ cd <run_dir> && node <skill_dir>/scripts/stg.mjs run
 
 1. stdout の JSON と `error-report.md` を読む。
 2. 必要に応じて `execution.log`、途中までの `graph.json` と `images/` を確認する。
-3. 次の形式でユーザーに報告し、**停止する**（自動で回避策を試さない）。エラー種別ごとの解決策は `references/error-handling.md`。
+3. 次の形式でユーザーに報告し、**停止する**（自動で回避策を試さない）。エラー種別ごとの解決策は `error-handling.md`。
 
 ```text
 エラー種別： / 発生箇所： / エラー内容： / 想定原因： / 推奨する解決方法： / 処理結果：探索を停止しました。
@@ -152,8 +152,8 @@ node <skill_dir>/scripts/stg.mjs generate
 
 | ファイル | 内容 |
 |---|---|
-| `references/config.md` | config.json の全項目・ステップ記法 |
-| `references/exploration-rules.md` | 探索アルゴリズム・状態の識別・安全判定・外部リンク・上限 |
-| `references/drawio-format.md` | draw.io 出力形式・矢印の接続方式・レイアウト・制限事項 |
-| `references/error-handling.md` | エラー種別と推奨する解決方法 |
-| `examples/sample-config.json` | チャットアプリ向けの config 例 |
+| `config.md` | config.json の全項目・ステップ記法 |
+| `exploration-rules.md` | 探索アルゴリズム・状態の識別・安全判定・外部リンク・上限 |
+| `drawio-format.md` | draw.io 出力形式・矢印の接続方式・レイアウト・制限事項 |
+| `error-handling.md` | エラー種別と推奨する解決方法 |
+| `assets/templates/config.json` | チャットアプリ向けの config 例 |

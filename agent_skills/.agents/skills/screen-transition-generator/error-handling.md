@@ -13,7 +13,7 @@
 
 | kind | 種別 | 主な原因 | 推奨する解決方法 |
 |---|---|---|---|
-| `CONFIG_INVALID` | 設定ファイル不正 | config.json の形式・値の誤り | `references/config.md` を参照して修正 |
+| `CONFIG_INVALID` | 設定ファイル不正 | config.json の形式・値の誤り | `config.md` を参照して修正 |
 | `CONNECTION` | 接続失敗 | アプリ未起動、ポート違い | `docker compose ps` で状態確認、`baseUrl` と公開ポートを確認 |
 | `START_SCREEN` | 開始画面特定失敗 | `start.url` / `start.steps` が実画面と不一致、指示が曖昧 | `probe` で確認して修正。曖昧ならユーザーに確認 |
 | `ACTION_NOT_FOUND` | ボタン検出失敗 | DOM 構造・ラベルが記録時と異なる | `probe` で候補を確認、`actionRoots` を見直す |

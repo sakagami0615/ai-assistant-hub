@@ -5,7 +5,7 @@ export const ERROR_KINDS = {
   CONFIG_INVALID: {
     title: '設定ファイル不正',
     causes: ['config.json の形式・値が仕様と一致していません。'],
-    fixes: ['references/config.md のスキーマを確認し、指摘された項目を修正してください。'],
+    fixes: ['config.md のスキーマを確認し、指摘された項目を修正してください。'],
   },
   CONNECTION: {
     title: '接続失敗',

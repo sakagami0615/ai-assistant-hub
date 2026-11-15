@@ -11,6 +11,7 @@ agent_skills/
 ├── .agents/skills/<name>/   # Skill本体（配布単位）
 │   ├── SKILL.md
 │   ├── <reference>.md       # 必要な分岐でだけ読む補足資料
+│   ├── scripts/             # 補助スクリプトとそのテスト（コードを持つSkillのみ）
 │   └── assets/templates/    # Skillが生成するファイルのテンプレート
 ├── docs/<name>.md           # 利用者向けの説明
 └── examples/<name>-skill/   # 利用例

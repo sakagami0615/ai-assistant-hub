@@ -4,7 +4,7 @@ import { readFile } from 'node:fs/promises';
 import { join, extname, dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-export const EXAMPLE_DIR = resolve(dirname(fileURLToPath(import.meta.url)), '../../../../../examples/screen-transition-generator');
+export const EXAMPLE_DIR = resolve(dirname(fileURLToPath(import.meta.url)), '../../../../../examples/screen-transition-generator-skill/chat-app');
 
 const TYPES = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8' };
 

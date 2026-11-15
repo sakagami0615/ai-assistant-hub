@@ -88,15 +88,33 @@ node <skill_dir>/scripts/stg.mjs generate  # graph.json から図を再生成（
 - 画面名・矢印ラベルの文字サイズは画像の表示幅に比例させ、スクリーンショットに対して小さくなりすぎないようにしています。
 - ヘッダーのメニューなど全画面に共通する操作の矢印は代表の1本にまとめ、全件は非表示レイヤー「共通ナビゲーション（全件）」に入れます。
 
+## 依頼例
+
+```text
+screen-transition-generatorを使って、このアプリの初期画面から画面遷移図を生成してください。
+レコメンドボタンを操作して到達できる画面を探索してください。
+```
+
+```text
+チャットの初期画面から、解像度1280×720で画面遷移図を作成してください。
+アプリは既に起動しているので、再起動しないでください。
+```
+
+```text
+探索は実行せず、probeで開始画面の操作候補と安全判定だけを確認してください。
+```
+
 ## お試し環境
 
-`agent_skills/examples/screen-transition-generator/` に、Docker Composeで起動できるチャット形式のモックアプリと設定例があります。使い方は同フォルダのREADMEを参照してください。
+[../examples/screen-transition-generator-skill/chat-app/](../examples/screen-transition-generator-skill/chat-app/) に、Docker Composeで起動できるチャット形式のモックアプリと設定例があります。使い方は同フォルダのREADMEを参照してください。
 
 ## 関連ファイル
 
-- Skill定義: `agent_skills/.agents/skills/screen-transition-generator/SKILL.md`
-- 設定仕様: `agent_skills/.agents/skills/screen-transition-generator/references/config.md`
-- 探索ルール: `agent_skills/.agents/skills/screen-transition-generator/references/exploration-rules.md`
-- draw.io形式: `agent_skills/.agents/skills/screen-transition-generator/references/drawio-format.md`
-- エラー処理: `agent_skills/.agents/skills/screen-transition-generator/references/error-handling.md`
-- お試し環境: `agent_skills/examples/screen-transition-generator/`
+- Skill本体: [../.agents/skills/screen-transition-generator/SKILL.md](../.agents/skills/screen-transition-generator/SKILL.md)
+- 設定仕様: [../.agents/skills/screen-transition-generator/config.md](../.agents/skills/screen-transition-generator/config.md)
+- 設定例: [../.agents/skills/screen-transition-generator/assets/templates/config.json](../.agents/skills/screen-transition-generator/assets/templates/config.json)
+- 探索ルール: [../.agents/skills/screen-transition-generator/exploration-rules.md](../.agents/skills/screen-transition-generator/exploration-rules.md)
+- draw.io形式: [../.agents/skills/screen-transition-generator/drawio-format.md](../.agents/skills/screen-transition-generator/drawio-format.md)
+- エラー処理: [../.agents/skills/screen-transition-generator/error-handling.md](../.agents/skills/screen-transition-generator/error-handling.md)
+- 補助スクリプト: [../.agents/skills/screen-transition-generator/scripts/](../.agents/skills/screen-transition-generator/scripts/)
+- 利用例: [../examples/screen-transition-generator-skill/chat-app/](../examples/screen-transition-generator-skill/chat-app/)

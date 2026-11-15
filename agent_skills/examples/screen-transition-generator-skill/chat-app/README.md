@@ -32,11 +32,11 @@
 
 ```bash
 # 1. 起動
-cd agent_skills/examples/screen-transition-generator
+cd agent_skills/examples/screen-transition-generator-skill/chat-app
 docker compose up -d --wait
 
 # 2. 初回のみ: スクリプトの依存をインストール
-(cd ../../.agents/skills/screen-transition-generator/scripts && npm ci && npx playwright install chromium)
+(cd ../../../.agents/skills/screen-transition-generator/scripts && npm ci && npx playwright install chromium)
 
 # 3. 作業ディレクトリに config.json を置いて実行
 mkdir -p /tmp/stg-demo/screen-transition-generator
@@ -54,7 +54,7 @@ docker compose down
 
 エージェントから試す場合は、例えば次のように依頼します。
 
-> agent_skills/examples/screen-transition-generator のチャットアプリについて、初期画面から画面遷移図を生成してください。レコメンドボタンを操作して到達できる画面を探索してください。
+> agent_skills/examples/screen-transition-generator-skill/chat-app のチャットアプリについて、初期画面から画面遷移図を生成してください。レコメンドボタンを操作して到達できる画面を探索してください。
 
 ## 想定される結果
 

@@ -66,4 +66,4 @@
 
 ## 例（チャットアプリ）
 
-`examples/sample-config.json` を参照。
+`assets/templates/config.json` を参照。
