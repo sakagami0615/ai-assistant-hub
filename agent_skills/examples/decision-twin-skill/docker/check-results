@@ -3,7 +3,6 @@
 
 使い方: check-results <expected-round.md> <実行後の sample-repo> <元の sample-repo> <reports dir>
 """
-import filecmp
 import json
 import os
 import re
@@ -35,30 +34,14 @@ def parse_expected(path):
     return rows
 
 
-def frontmatter(path):
-    with open(path, encoding="utf-8") as f:
-        text = f.read()
-    m = re.match(r"---\n(.*?)\n---", text, re.S)
-    data = {}
-    if m:
-        for line in m.group(1).splitlines():
-            if ":" in line:
-                k, v = line.split(":", 1)
-                data[k.strip()] = v.split("#", 1)[0].strip()
-    return data, text
-
-
 def read_decisions(decisions, errors):
-    """docs/decisions を、既存 ADR（frontmatter 付き）と判断ノートに分けて読む。"""
-    adrs, notes = {}, {}
+    """docs/decisions の判断ノートを読み、id → 項目の辞書を返す。"""
+    notes = {}
     for name in sorted(os.listdir(decisions)):
         if not name.endswith(".md"):
             continue
-        path = os.path.join(decisions, name)
-        data, text = frontmatter(path)
-        if data:
-            adrs[name] = text
-            continue
+        with open(os.path.join(decisions, name), encoding="utf-8") as f:
+            text = f.read()
         topic = name[:-3]
         for n, line in enumerate(text.splitlines(), 1):
             if not line.startswith("- "):
@@ -71,7 +54,7 @@ def read_decisions(decisions, errors):
             if nid in notes:
                 errors.append(f"{name}: 見出し「{m.group('head')}」が重複しています")
             notes[nid] = {"src": m.group("src"), "line": line}
-    return adrs, notes
+    return notes
 
 
 def main(expected_path, repo, original, reports):
@@ -116,17 +99,9 @@ def main(expected_path, repo, original, reports):
             ev = json.dumps(row.get("evidence", []), ensure_ascii=False)
             if exp["evidence"] not in ev:
                 errors.append(f"{qid}: 根拠に {exp['evidence']} がありません: {ev}")
-        if qid == "q-1-3" and "ADR-002" in json.dumps(row.get("evidence", [])) and "api#" not in json.dumps(row.get("evidence", []), ensure_ascii=False):
-            errors.append("q-1-3: 古い既存 ADR-002 だけを根拠にしています")
 
-    orig_adrs, orig_notes = read_decisions(os.path.join(original, "docs", "decisions"), [])
-    adrs, notes = read_decisions(os.path.join(repo, "docs", "decisions"), errors)
-
-    for name, text in orig_adrs.items():
-        if adrs.get(name) != text:
-            errors.append(f"既存の {name} が変更または削除されています")
-    for name in sorted(set(adrs) - set(orig_adrs)):
-        errors.append(f"新しい ADR ファイル {name} が作られています（判断ノートに書くべき）")
+    orig_notes = read_decisions(os.path.join(original, "docs", "decisions"), [])
+    notes = read_decisions(os.path.join(repo, "docs", "decisions"), errors)
 
     replaced = set()
     for row in entries.values():

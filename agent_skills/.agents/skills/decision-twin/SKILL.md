@@ -5,7 +5,7 @@ description: grilling や brainstorming などの明確化質問のラウンド�
 
 # decision-twin
 
-明確化質問のラウンドを受け取り、ユーザーが過去に残した判断（`docs/decisions/` の判断ノートと既存 ADR、`docs/principles.md`）とリポジトリの事実だけを根拠に代理回答する。根拠で決まらない判断と高影響な判断はユーザーに確認し、ユーザーの回答を判断ノートに蓄積する。
+明確化質問のラウンドを受け取り、ユーザーが過去に残した判断（`docs/decisions/` の判断ノート、`docs/principles.md`）とリポジトリの事実だけを根拠に代理回答する。根拠で決まらない判断と高影響な判断はユーザーに確認し、ユーザーの回答を判断ノートに蓄積する。
 
 入口は2つある。
 
@@ -53,7 +53,7 @@ twin-answerer を1回起動し、ラウンドの全質問をまとめて渡す�
 
 - 質問 ID と質問文の一覧
 - リポジトリのルートパス
-- 判断記録の場所: `docs/decisions/`（判断ノートと既存 ADR）、`docs/principles.md`、`~/.decision-twin/principles.md`（あれば。読み取り専用）
+- 判断記録の場所: `docs/decisions/`（判断ノート）、`docs/principles.md`、`~/.decision-twin/principles.md`（あれば。読み取り専用）
 
 会話の流れ、質問役の推奨、分類結果は渡さない。前のラウンドで確定した回答は判断ノートに書かれているので、answerer が自分で読む。返り値は回答オブジェクトの JSON 配列（形式は [formats.md](formats.md)）。
 

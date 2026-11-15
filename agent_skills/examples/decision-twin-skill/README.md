@@ -14,7 +14,7 @@ docker compose run --rm decision-twin-check
 
 | 場所 | 内容 |
 | --- | --- |
-| `assets/sample-repo/` | 判断ノート4本、古い既存 ADR 1本、原則を持つ小さな TODO API リポジトリ |
+| `assets/sample-repo/` | 判断ノート4本と原則を持つ小さな TODO API リポジトリ |
 | `assets/round-1.md` | grilling 形式の質問ラウンド（8問） |
 | `assets/human-answers.md` | 人間役の回答。表示を書き出した後にだけ読ませます |
 | `assets/expected-round.md` | 各質問の期待結果。`docker/check-results` がこれを読んで照合します |
@@ -24,4 +24,4 @@ docker compose run --rm decision-twin-check
 
 ## シナリオ
 
-ラウンドは「リポジトリの事実」「判断ノートの判断」「新しい判断ノートに置き換えられた古い ADR」「原則から導ける好み」「根拠のない小さな好み（人間が上書き）」「新しい約束」「DB スキーマ変更」「矛盾する判断」を1問ずつ含みます。詳細は `assets/expected-round.md` を参照してください。
+ラウンドは「リポジトリの事実」「判断ノートの判断」「質問役の推奨と食い違う判断」「原則から導ける好み」「根拠のない小さな好み（人間が上書き）」「新しい約束」「DB スキーマ変更」「矛盾する判断」を1問ずつ含みます。詳細は `assets/expected-round.md` を参照してください。
