@@ -15,8 +15,8 @@ tools: Read
 
 各質問について、evidence の各ファイルを Read で開き、次を順に確かめる。
 
-1. claim がそのファイルに実際に書かれている。ADR の `date` が frontmatter と一致する。
-2. 根拠にした ADR が、別の ADR の `supersedes` で置き換えられていない（`docs/decisions/` 内の ADR の frontmatter を Read で確かめる）。
+1. claim がそのファイルに実際に書かれている。判断ノートなら id の見出しの行に書かれ、`date` がその行の日付と一致する。既存 ADR なら `date` が frontmatter と一致する。
+2. 根拠にした判断がまだ有効である。既存 ADR なら別の ADR の `supersedes` で置き換えられておらず、同じことについて日付の新しい判断ノートの項目がない（`docs/decisions/` を Read で確かめる）。
 3. answer が claim から導ける。根拠にない新しい約束・範囲・数値を足していない。
 4. status が根拠の強さと合っている（直接書いてあれば FACT / EXPLICIT_DECISION、導いたなら INFERRED、根拠なしなら PROPOSAL / UNKNOWN）。
 5. 質問に複数の解釈があり、解釈によって実装が変わるか。

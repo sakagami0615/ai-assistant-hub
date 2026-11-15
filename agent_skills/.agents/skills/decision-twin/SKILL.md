@@ -1,13 +1,18 @@
 ---
 name: decision-twin
-description: grilling や brainstorming などの明確化質問のラウンドに、ユーザーの代わりに判断記録（ADR・原則）を根拠として代理回答するときに使用する。ユーザーが「decision-twin で答えて」「grilling を decision-twin で回して」のように明示したときだけ使う。
+description: grilling や brainstorming などの明確化質問のラウンドに、ユーザーの代わりに判断記録（判断ノート・原則）を根拠として代理回答するとき、またはユーザーに質問して判断記録を蓄積するときに使用する。ユーザーが「decision-twin で答えて」「grilling を decision-twin で回して」「decision-twin で学習したい」のように明示したときだけ使う。
 ---
 
 # decision-twin
 
-明確化質問のラウンドを受け取り、ユーザーが過去に残した判断（`docs/decisions/` の ADR、`docs/principles.md`）とリポジトリの事実だけを根拠に代理回答する。根拠で決まらない判断と高影響な判断はユーザーに確認し、ユーザーの回答を判断記録として蓄積する。
+明確化質問のラウンドを受け取り、ユーザーが過去に残した判断（`docs/decisions/` の判断ノートと既存 ADR、`docs/principles.md`）とリポジトリの事実だけを根拠に代理回答する。根拠で決まらない判断と高影響な判断はユーザーに確認し、ユーザーの回答を判断ノートに蓄積する。
 
-これは段階1（shadow mode）の実装である。代理回答は参考表示であり、ユーザーが承認するまで何も確定しない。メインエージェントは質問役でもあるので、質問への回答は必ずこの手順の twin-answerer を通して作る。自分の意見で埋めた回答はユーザーの決定ではない。
+入口は2つある。
+
+- **代理回答**: 質問のラウンドを受け取ったとき。下の手順1〜9に従う。
+- **学習**: ユーザーが学習を明示したとき（「decision-twin で学習したい」など）。手順は [learning.md](learning.md)。
+
+代理回答の確定のさせ方は承認モードで決まる。既定の `require`（shadow mode）では、代理回答は参考表示であり、ユーザーが承認するまで何も確定しない。`auto` では代理回答一覧を自動で確定する。どちらのモードでもエスカレーション質問は必ずユーザーに聞く。メインエージェントは質問役でもあるので、質問への回答は必ずこの手順の twin-answerer を通して作る。自分の意見で埋めた回答はユーザーの決定ではない。
 
 ## 手順
 
@@ -17,10 +22,10 @@ description: grilling や brainstorming などの明確化質問のラウンド�
 2. 使う経路を決め、`isolation` として記録する。
    - 設置したサブエージェントを起動できる: `agent`
    - 起動できない（未反映、Codex など）: テンプレート本文を汎用サブエージェントへのプロンプトとして渡す。サブエージェント自体がない環境では、answerer の作業を終えて回答 JSON をファイルに書き出してから、verifier の作業を別の手順として行う。どちらも `prompt-only`
-3. `.decision-twin/config.json` に `confidence_threshold` があればその値、なければ `0.80` をしきい値にする。
+3. `.decision-twin/config.json` を読む。`confidence_threshold` があればその値、なければ `0.80` をしきい値にする。`approval` が `"auto"` なら承認モード auto、それ以外（未設定を含む）は `require`。
 4. `.decision-twin/` がなければ作る。`.gitignore` に入っていなければ、追加するかをユーザーに一度だけ提案する。
 
-**完了条件:** isolation としきい値が決まっている。
+**完了条件:** isolation、しきい値、承認モードが決まっている。
 
 ### 2. ラウンドを受け取る
 
@@ -48,9 +53,9 @@ twin-answerer を1回起動し、ラウンドの全質問をまとめて渡す�
 
 - 質問 ID と質問文の一覧
 - リポジトリのルートパス
-- 判断記録の場所: `docs/decisions/`、`docs/principles.md`、`~/.decision-twin/principles.md`（あれば。読み取り専用）
+- 判断記録の場所: `docs/decisions/`（判断ノートと既存 ADR）、`docs/principles.md`、`~/.decision-twin/principles.md`（あれば。読み取り専用）
 
-会話の流れ、質問役の推奨、分類結果は渡さない。前のラウンドで確定した回答は ADR に書かれているので、answerer が自分で読む。返り値は回答オブジェクトの JSON 配列（形式は [formats.md](formats.md)）。
+会話の流れ、質問役の推奨、分類結果は渡さない。前のラウンドで確定した回答は判断ノートに書かれているので、answerer が自分で読む。返り値は回答オブジェクトの JSON 配列（形式は [formats.md](formats.md)）。
 
 ### 5. twin-verifier で検査する
 
@@ -86,20 +91,23 @@ twin-verifier を起動し、各質問について「質問文・回答オブジ
 2. 代理回答一覧
 3. 一覧をまとめて承認するか、上書き・保留する番号を指定してもらう依頼
 
+承認モード auto では、②を「自動で確定した回答」として出し、③は上書きしたい番号だけを聞く。エスカレーション質問がなければ、①を省いてユーザーの返事を待たずに手順8へ進む。
+
 ### 8. 回答を記録する
 
 ユーザーの回答を受けたら、[recording.md](recording.md) に沿って記録する。
 
-1. 全質問について `.decision-twin/log.jsonl` に1行ずつ追記する。
-2. エスカレーション質問への回答、上書き、承認された `INFERRED` / `PROPOSAL` を ADR に書く。
+1. 全質問について `.decision-twin/log.jsonl` に1行ずつ追記する。auto で自動確定した質問は `auto_accepted: true`、`human_answer: null`。
+2. エスカレーション質問への回答、上書き、承認された `INFERRED` / `PROPOSAL`（auto では自動確定した `INFERRED` / `PROPOSAL`）を判断ノートに書く。
 3. ユーザーが理由を述べていれば、原則の追記案をまとめて提示し、承認された文言だけを `docs/principles.md` に書く。
+4. auto で自動確定した回答を、後のどの時点でもユーザーが上書きしたら、判断ノートを書き換え、log に `auto_override` 行を追記する。質問役に返し済みなら、上書き後の回答を質問役にも伝える。
 
-**完了条件:** ラウンドの全質問の行が log にあり、記録対象の全回答に ADR がある。
+**完了条件:** ラウンドの全質問の行が log にあり、記録対象の全回答が判断ノートにある。
 
 ### 9. 質問役に返す
 
-確定した回答（ユーザーの回答、上書き後の回答、承認された代理回答）を、そのラウンドへのユーザーの回答として元のワークフロー（grilling など）に戻す。保留された質問は未決として返す。次のラウンドが来たら手順2に戻る。
+確定した回答（ユーザーの回答、上書き後の回答、承認または自動確定した代理回答）を、そのラウンドへのユーザーの回答として元のワークフロー（grilling など）に戻す。保留された質問は未決として返す。次のラウンドが来たら手順2に戻る。
 
 ## 集計
 
-shadow mode の精度は `python3 scripts/report.py .decision-twin/log.jsonl` で集計する。分類ごとの Override Rate、Escalation Recall / Precision などを Markdown で出す。段階2に進むかの判断材料に使う。
+代理回答の精度は `python3 scripts/report.py .decision-twin/log.jsonl` で集計する。分類ごとの Override Rate、Escalation Recall / Precision、自動確定の件数と後からの上書き率などを Markdown で出す。承認モードを auto にしてよいかの判断材料に使う。

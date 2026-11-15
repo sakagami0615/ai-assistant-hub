@@ -74,6 +74,26 @@ class MetricsTest(unittest.TestCase):
         self.assertAlmostEqual(m["escalation_recall"], 2 / 3)
         self.assertAlmostEqual(m["escalation_precision"], 2 / 4)
 
+    def test_typed_rows_are_not_questions_and_auto_metrics(self):
+        rows = [
+            row(question_id="a"),
+            row(question_id="b", human_answer=None, auto_accepted=True),
+            row(question_id="c", human_answer=None, auto_accepted=True),
+            {"type": "auto_override", "question_id": "c", "human_answer": "50"},
+            {"type": "learning", "question_id": "l-1-1", "question": "x", "human_answer": "y", "note": "api#x"},
+        ]
+        m = report.compute(rows)
+        self.assertEqual(m["total"], 3)
+        self.assertEqual(m["auto_accepted"], 2)
+        self.assertEqual(m["auto_overridden"], 1)
+        self.assertAlmostEqual(m["auto_override_rate"], 0.5)
+        self.assertEqual(m["learning"], 1)
+        # 自動確定は Override Rate の分母に入らない
+        self.assertAlmostEqual(m["override_rate"], 0.0)
+        out = report.render(m)
+        self.assertIn("自動確定", out)
+        self.assertIn("学習フロー", out)
+
     def test_ignores_non_question_rows_and_handles_empty(self):
         m = report.compute([{"type": "principle_rejected", "text": "x"}])
         self.assertEqual(m["total"], 0)

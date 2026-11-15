@@ -12,10 +12,12 @@ import sys
 REQUIRED_LOG_KEYS = [
     "ts", "round", "question_id", "class", "impact", "reversibility", "twin_status",
     "confidence", "evidence", "verifier", "retries", "threshold", "isolation",
-    "escalated", "escalation_rule", "human_answer", "overridden", "adr",
+    "escalated", "escalation_rule", "human_answer", "overridden", "note", "replaces",
 ]
-REQUIRED_ADR_KEYS = ["id", "title", "owner", "date", "scope", "source", "supersedes"]
-ADR_SOURCES = {"human", "approved-inferred", "approved-proposal"}
+NOTE_LINE = re.compile(
+    r"^- \*\*(?P<head>.+?)\*\*: (?P<body>.+)（(?P<date>\d{4}-\d{2}-\d{2})、"
+    r"(?P<src>回答|上書き|承認|自動|学習)(?:、根拠: (?P<ev>[^）]+))?）$"
+)
 
 
 def parse_expected(path):
@@ -27,7 +29,7 @@ def parse_expected(path):
                 rows[cells[0]] = {
                     "escalation": cells[1],
                     "statuses": [] if cells[2] == "-" else [s.strip() for s in cells[2].split(",")],
-                    "adr": cells[3],
+                    "note": cells[3],
                     "evidence": None if cells[4] == "-" else cells[4],
                 }
     return rows
@@ -44,6 +46,32 @@ def frontmatter(path):
                 k, v = line.split(":", 1)
                 data[k.strip()] = v.split("#", 1)[0].strip()
     return data, text
+
+
+def read_decisions(decisions, errors):
+    """docs/decisions を、既存 ADR（frontmatter 付き）と判断ノートに分けて読む。"""
+    adrs, notes = {}, {}
+    for name in sorted(os.listdir(decisions)):
+        if not name.endswith(".md"):
+            continue
+        path = os.path.join(decisions, name)
+        data, text = frontmatter(path)
+        if data:
+            adrs[name] = text
+            continue
+        topic = name[:-3]
+        for n, line in enumerate(text.splitlines(), 1):
+            if not line.startswith("- "):
+                continue
+            m = NOTE_LINE.match(line)
+            if not m:
+                errors.append(f"{name} {n}行目が判断ノートの書式ではありません: {line}")
+                continue
+            nid = f"{topic}#{m.group('head')}"
+            if nid in notes:
+                errors.append(f"{name}: 見出し「{m.group('head')}」が重複しています")
+            notes[nid] = {"src": m.group("src"), "line": line}
+    return adrs, notes
 
 
 def main(expected_path, repo, original, reports):
@@ -88,47 +116,49 @@ def main(expected_path, repo, original, reports):
             ev = json.dumps(row.get("evidence", []), ensure_ascii=False)
             if exp["evidence"] not in ev:
                 errors.append(f"{qid}: 根拠に {exp['evidence']} がありません: {ev}")
-        if qid == "q-1-3" and "ADR-002" in json.dumps(row.get("evidence", [])) and "ADR-004" not in json.dumps(row.get("evidence", [])):
-            errors.append("q-1-3: supersede された ADR-002 だけを根拠にしています")
+        if qid == "q-1-3" and "ADR-002" in json.dumps(row.get("evidence", [])) and "api#" not in json.dumps(row.get("evidence", []), ensure_ascii=False):
+            errors.append("q-1-3: 古い既存 ADR-002 だけを根拠にしています")
 
-    decisions = os.path.join(repo, "docs", "decisions")
-    orig_decisions = os.path.join(original, "docs", "decisions")
-    for name in sorted(os.listdir(orig_decisions)):
-        target = os.path.join(decisions, name)
-        if not os.path.exists(target) or not filecmp.cmp(os.path.join(orig_decisions, name), target, shallow=False):
+    orig_adrs, orig_notes = read_decisions(os.path.join(original, "docs", "decisions"), [])
+    adrs, notes = read_decisions(os.path.join(repo, "docs", "decisions"), errors)
+
+    for name, text in orig_adrs.items():
+        if adrs.get(name) != text:
             errors.append(f"既存の {name} が変更または削除されています")
+    for name in sorted(set(adrs) - set(orig_adrs)):
+        errors.append(f"新しい ADR ファイル {name} が作られています（判断ノートに書くべき）")
 
-    new_adrs = {}
-    for name in sorted(set(os.listdir(decisions)) - set(os.listdir(orig_decisions))):
-        if not name.endswith(".md"):
-            continue
-        data, text = frontmatter(os.path.join(decisions, name))
-        missing = [k for k in REQUIRED_ADR_KEYS if k not in data]
-        if missing:
-            errors.append(f"{name}: frontmatter の項目が足りません: {', '.join(missing)}")
-        if data.get("source") not in ADR_SOURCES:
-            errors.append(f"{name}: source={data.get('source')} は許可されていません")
-        qids = set(re.findall(r"q-\d+-\d+", text))
-        for qid in qids:
-            new_adrs.setdefault(qid, []).append((name, data))
-        if not qids:
-            warnings.append(f"{name}: どの質問の ADR か（question_id）が書かれていません")
+    replaced = set()
+    for row in entries.values():
+        replaced.update(row.get("replaces") or [])
+    for nid in orig_notes:
+        if nid not in notes and nid not in replaced:
+            errors.append(f"元の判断 {nid} が replaces なしで消えています")
 
     for qid, exp in expected.items():
-        written = new_adrs.get(qid, [])
-        if exp["adr"] == "あり" and not written:
-            errors.append(f"{qid}: ADR が書かれていません")
-        if exp["adr"] == "なし" and written:
-            errors.append(f"{qid}: 書くべきでない ADR があります: {written[0][0]}")
+        row = entries.get(qid)
+        if row is None:
+            continue
+        nid = row.get("note")
+        if exp["note"] == "あり":
+            if not nid:
+                errors.append(f"{qid}: 判断ノートが書かれていません（note が空）")
+            elif nid not in notes:
+                errors.append(f"{qid}: note={nid} の項目が判断ノートにありません")
+        if exp["note"] == "なし" and nid:
+            errors.append(f"{qid}: 書くべきでない判断ノートの項目があります: {nid}")
 
-    for name, data in new_adrs.get("q-1-5", []):
-        if data.get("source") != "human":
-            errors.append(f"q-1-5: {name} の source は human であるべきです（{data.get('source')}）")
     row5 = entries.get("q-1-5", {})
+    item5 = notes.get(row5.get("note") or "")
+    if item5 and item5["src"] not in {"回答", "上書き"}:
+        errors.append(f"q-1-5: 出所は 回答 / 上書き であるべきです（{item5['src']}）")
     if row5 and row5.get("escalated") is False and row5.get("overridden") is not True:
         errors.append("q-1-5: 一覧で上書きしたのに overridden が true ではありません")
-    if not any("ADR-006" in d.get("supersedes", "") for _, d in new_adrs.get("q-1-8", [])):
-        errors.append("q-1-8: 新しい ADR が ADR-006 を supersede していません")
+    row8 = entries.get("q-1-8", {})
+    if not any(str(r).startswith("privacy#") for r in row8.get("replaces") or []):
+        errors.append(f"q-1-8: replaces に privacy# の判断が入っていません（{row8.get('replaces')}）")
+    if any("物理削除" in v["line"] for k, v in notes.items() if k.startswith("privacy#")):
+        errors.append("q-1-8: privacy の物理削除の判断が残っています")
 
     display = os.path.join(reports, "round-1-display.md")
     if not os.path.exists(display) or os.path.getsize(display) == 0:

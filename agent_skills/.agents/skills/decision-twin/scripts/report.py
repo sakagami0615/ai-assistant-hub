@@ -37,7 +37,14 @@ def _needs_human(r):
 
 
 def compute(rows):
-    qs = [r for r in rows if "question_id" in r]
+    # type 付きの行（学習フロー、自動確定の後からの上書き、原則の却下）は代理回答の質問ではない
+    qs = [r for r in rows if "question_id" in r and "type" not in r]
+    auto = [r for r in qs if r.get("auto_accepted")]
+    auto_ids = {r["question_id"] for r in auto}
+    auto_overridden = {
+        r.get("question_id") for r in rows
+        if r.get("type") == "auto_override" and r.get("question_id") in auto_ids
+    }
     answered = [r for r in qs if r.get("human_answer") is not None]
 
     by_class = OrderedDict()
@@ -73,6 +80,10 @@ def compute(rows):
         "escalation_recall": _rate(tp, tp + fn),
         "escalation_precision": _rate(tp, tp + fp),
         "by_class": by_class,
+        "auto_accepted": len(auto),
+        "auto_overridden": len(auto_overridden),
+        "auto_override_rate": _rate(len(auto_overridden), len(auto)),
+        "learning": sum(1 for r in rows if r.get("type") == "learning"),
     }
 
 
@@ -94,6 +105,8 @@ def render(m):
         f"| Escalation Precision | {_fmt(m['escalation_precision'])} |",
         f"| Evidence Support Rate | {_fmt(m['evidence_support_rate'])} |",
         f"| エスカレーション率 | {_fmt(m['escalation_rate'])} |",
+        f"| 自動確定 | {m['auto_accepted']}件（後から上書き {m['auto_overridden']}件、{_fmt(m['auto_override_rate'])}） |",
+        f"| 学習フローの回答 | {m['learning']}件 |",
         "",
         "| 分類 | 件数 | エスカレーション | Override Rate |",
         "| --- | --- | --- | --- |",
@@ -103,7 +116,7 @@ def render(m):
     lines += [
         "",
         "Escalation Recall / Precision は近似値です。上書きされた非エスカレーション問を見逃し、"
-        "twin の回答に同意したエスカレーション問を質問しすぎとして数えています。保留した質問は除外しています。",
+        "twin の回答に同意したエスカレーション問を質問しすぎとして数えています。保留した質問と、承認モード auto で自動確定した質問は除外しています。",
     ]
     return "\n".join(lines) + "\n"
 
