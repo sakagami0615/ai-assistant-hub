@@ -91,6 +91,22 @@ class MetricsTest(unittest.TestCase):
         m = report.compute(rows)
         self.assertEqual(set(m["by_class"]), {"REPO_FACT", "ODD", "(未分類)"})
 
+    def test_late_answers_are_merged_into_metrics(self):
+        rows = [
+            row(question_id="a", escalated=True, human_answer=None),
+            row(question_id="b", escalated=True, human_answer=None),
+            row(question_id="c", human_answer=None),
+            {"type": "late_answer", "question_id": "a", "human_answer": "別案"},
+            {"type": "late_answer", "question_id": "b", "human_answer": "同意"},
+            {"type": "late_answer", "question_id": "c", "human_answer": "50"},
+            {"type": "late_answer", "question_id": "zzz", "human_answer": "x"},
+        ]
+        m = report.compute(rows)
+        # a は TP、b は FP、c は FN
+        self.assertAlmostEqual(m["escalation_recall"], 1 / 2)
+        self.assertAlmostEqual(m["escalation_precision"], 1 / 2)
+        self.assertEqual(m["total"], 3)
+
     def test_late_answer_is_not_a_question(self):
         rows = [row(question_id="a"), {"type": "late_answer", "question_id": "a", "human_answer": "同意"}]
         self.assertEqual(report.compute(rows)["total"], 1)

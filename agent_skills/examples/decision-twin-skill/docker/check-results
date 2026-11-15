@@ -133,6 +133,13 @@ def main(expected_path, memory, original, reports):
         want = exp["note"] == "あり" or (exp["note"] == "確認時のみ" and row.get("escalated") is True)
         if want:
             item = notes.get(nid or "")
+            # 確認質問の答えが既存の項目と同じ内容なら、行を書き換えず既存の id を指す（recording.md）
+            same = (row.get("escalated") is True and nid in orig_notes
+                    and item and item["line"] == orig_notes[nid]["line"]
+                    and (row.get("human_answer") == "同意" or str(row.get("human_answer")) in item["line"]
+                         or (exp["word"] and exp["word"].replace(" ", "") in item["line"].replace(" ", ""))))
+            if same:
+                continue
             if item and nid in orig_notes and item["line"] == orig_notes[nid]["line"]:
                 errors.append(f"{qid}: note={nid} は元のままで、この質問で書かれた項目ではありません")
             if not nid:

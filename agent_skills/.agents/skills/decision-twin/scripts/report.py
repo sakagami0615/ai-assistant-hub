@@ -39,6 +39,16 @@ def _needs_human(r):
 def compute(rows):
     # type 付きの行（学習フロー、自動確定の後からの上書き、原則の却下）は代理回答の質問ではない
     qs = [r for r in rows if "question_id" in r and "type" not in r]
+    # 後から答えた質問（late_answer）は、元の行と結合した写しで集計する。元の行がなければ無視する
+    late = {r["question_id"]: r for r in rows if r.get("type") == "late_answer" and "question_id" in r}
+    merged = []
+    for r in qs:
+        l = late.get(r["question_id"])
+        if l is not None and r.get("human_answer") is None:
+            r = dict(r, human_answer=l.get("human_answer"))
+            r["overridden"] = (not r.get("escalated") and r["human_answer"] not in (None, "同意", r.get("twin_answer")))
+        merged.append(r)
+    qs = merged
     auto = [r for r in qs if r.get("auto_accepted")]
     auto_ids = {r["question_id"] for r in auto}
     auto_overridden = {
