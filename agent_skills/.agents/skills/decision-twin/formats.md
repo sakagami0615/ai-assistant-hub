@@ -100,7 +100,7 @@ grilling と同じ形式で書く。各質問に、確認する理由（規則�
 | ID | 分類 | impact | status | 回答 | 根拠（日付） |
 | --- | --- | --- | --- | --- | --- |
 | q-1-1 | REPO_FACT | LOW | FACT | session 認証 | `todo_project/settings.py` |
-| q-1-4 | USER_PREFERENCE | MEDIUM | ⚠ INFERRED | cron で済ませる | principles#1（2026-06-01） |
+| q-1-4 | USER_PREFERENCE | MEDIUM | ⚠ INFERRED | cron で済ませる | principles#3（2026-06-01） |
 
 - `INFERRED` と `PROPOSAL` には ⚠ を付け、決定ではないと分かるようにする。
 - 根拠の日付が他の根拠より古い、または 180 日以上前なら「（古い）」と書き添える。

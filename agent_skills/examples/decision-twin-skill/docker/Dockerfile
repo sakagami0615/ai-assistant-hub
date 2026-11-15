@@ -9,7 +9,7 @@ RUN apt-get update \
         ripgrep \
     && rm -rf /var/lib/apt/lists/*
 
-# ホストの ~/.codex/config.toml を読めるよう、ホストの Codex と近いバージョンにする
+# Codex のバージョン（必要なら CODEX_VERSION で変える）
 ARG CODEX_VERSION=0.165.0
 RUN npm install -g @openai/codex@${CODEX_VERSION}
 

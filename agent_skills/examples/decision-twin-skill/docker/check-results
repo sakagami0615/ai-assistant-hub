@@ -133,6 +133,8 @@ def main(expected_path, memory, original, reports):
         want = exp["note"] == "あり" or (exp["note"] == "確認時のみ" and row.get("escalated") is True)
         if want:
             item = notes.get(nid or "")
+            if item and nid in orig_notes and item["line"] == orig_notes[nid]["line"]:
+                errors.append(f"{qid}: note={nid} は元のままで、この質問で書かれた項目ではありません")
             if not nid:
                 errors.append(f"{qid}: 判断ノートが書かれていません（note が空）")
             elif item is None:

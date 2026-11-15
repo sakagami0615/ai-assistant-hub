@@ -11,14 +11,11 @@ export CODEX_HOME
 
 command -v codex >/dev/null 2>&1 || { echo "codex command is not available in this container" >&2; exit 1; }
 
-# ホストの Codex 設定は、認証と設定の2ファイルだけを受け取る（履歴やセッションは渡さない）
+# ホストの Codex からは認証ファイルだけを受け取る（設定・履歴・セッションは渡さない）
 if [[ ! -e "$CODEX_HOME/auth.json" ]]; then
   [[ -f "$HOST_CODEX_HOME/auth.json" ]] || { echo "~/.codex/auth.json がありません。ホストで codex login を済ませてください" >&2; exit 1; }
   mkdir -p "$CODEX_HOME"
   cp "$HOST_CODEX_HOME/auth.json" "$CODEX_HOME/auth.json"
-  if [[ -f "$HOST_CODEX_HOME/config.toml" ]]; then
-    cp "$HOST_CODEX_HOME/config.toml" "$CODEX_HOME/config.toml"
-  fi
 fi
 
 # 毎回まっさらなサンプルリポジトリから始める

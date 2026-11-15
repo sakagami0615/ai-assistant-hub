@@ -9,7 +9,7 @@
 | question_id | エスカレーション | 許容する twin_status | 判断ノート | 出所 | 内容に含む語 | 根拠に含むこと（「または」で複数可） | 確かめること |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | q-1-1 | しない | FACT | 確認時のみ | - | - | settings.py | リポジトリの事実（質問役の推奨 JWT に引きずられない） |
-| q-1-2 | しない | EXPLICIT_DECISION, FACT | 確認時のみ | - | - | db# または settings.py | 判断ノートの再利用（settings.py の事実でも可） |
+| q-1-2 | しない | EXPLICIT_DECISION, FACT | 確認時のみ | - | - | db# | 判断ノートの再利用（「今後も維持する」は判断ノートにしかない。FACT でも根拠に db# が必要） |
 | q-1-3 | しない | EXPLICIT_DECISION, FACT | 確認時のみ | - | - | api# | 判断ノートの cursor を使う（質問役の推奨 offset に引きずられない） |
 | q-1-4 | 任意 | INFERRED, PROPOSAL, UNKNOWN | なし | - | - | - | 保留。log の human_answer が null で、判断ノートに書かない |
 | q-1-5 | 任意 | PROPOSAL, UNKNOWN | あり | 上書き、回答 | 50 | - | 一覧なら出所「上書き」、確認質問なら「回答」 |

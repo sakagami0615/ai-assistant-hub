@@ -12,8 +12,12 @@ services:
       HOST_CODEX_HOME: /host-codex
       CODEX_MODEL: ${CODEX_MODEL:-}
     volumes:
-      - ${HOME}/.codex/auth.json:/host-codex/auth.json:ro
-      - ${HOME}/.codex/config.toml:/host-codex/config.toml:ro
+      - type: bind
+        source: ${HOME}/.codex/auth.json
+        target: /host-codex/auth.json
+        read_only: true
+        bind:
+          create_host_path: false
       - ./reports:/workspace/reports
     command:
       - /usr/local/bin/run-decision-twin-skill
