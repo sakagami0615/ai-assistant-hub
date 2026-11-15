@@ -12,7 +12,7 @@
   "status": "EXPLICIT_DECISION",
   "confidence": 0.95,
   "evidence": [
-    {"source": "docs/decisions/db.md", "id": "db#使う DB", "date": "2026-06-01", "claim": "本番・開発とも PostgreSQL を使い、今後も維持する"}
+    {"source": "memory/decisions/db.md", "id": "db#使う DB", "date": "2026-06-01", "claim": "本番・開発とも PostgreSQL を使い、今後も維持する"}
   ],
   "conflicts": [],
   "alternatives": ["SQLite"]
@@ -48,7 +48,7 @@
 
 ## log.jsonl の1行
 
-`.decision-twin/log.jsonl` に、1問1行で追記する。
+`memory/log.jsonl`（スキルフォルダ内）に、1問1行で追記する。
 
 ```json
 {"ts": "2026-11-15T10:00:00+09:00", "round": 1, "question_id": "q-1-5", "question": "一覧 API の既定ページサイズは 20 か 50 か", "class": "USER_PREFERENCE", "impact": "LOW", "reversibility": "EASY", "twin_status": "PROPOSAL", "twin_answer": "20", "confidence": 0.6, "evidence": [], "conflicts": [], "verifier": "PASS", "retries": 0, "threshold": 0.8, "isolation": "agent", "escalated": false, "escalation_rule": null, "shown_recommendation": "twin", "human_answer": "50", "overridden": true, "auto_accepted": false, "note": "api#一覧の既定ページサイズ", "replaces": []}

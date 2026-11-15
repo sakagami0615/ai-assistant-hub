@@ -8,9 +8,9 @@
 
 ### 1. 準備
 
-1. `.decision-twin/` がなければ作る。`.gitignore` の提案は SKILL.md の手順1と同じ。
-2. `docs/decisions/` の判断ノートと `docs/principles.md` を読み、既に決まっていることを把握する。
-3. セッション番号を、`.decision-twin/log.jsonl` の `type: "learning"` 行の `session` の最大値 + 1 にする。
+1. `memory/decisions/` がなければ作る。`memory/` はこのスキルフォルダ内のフォルダ（[SKILL.md](SKILL.md) の冒頭を参照）。
+2. `memory/decisions/` の判断ノートと `memory/principles.md` を読み、既に決まっていることを把握する。
+3. セッション番号を、`memory/log.jsonl` の `type: "learning"` 行の `session` の最大値 + 1 にする。
 
 ### 2. 題材を選んでもらう
 
@@ -42,7 +42,7 @@
 回答を受けるたびに、次の質問を出す前に記録する。
 
 1. 回答を判断ノートに出所 `学習` で書く。書き方は [recording.md](recording.md) の「判断ノートの書き方」。既にある項目を変える回答なら、その行を書き換えて `replaces` に元の id を入れる。
-2. `.decision-twin/log.jsonl` に `type: "learning"` の行を1行追記する。形式は [formats.md](formats.md)。
+2. `memory/log.jsonl` に `type: "learning"` の行を1行追記する。形式は [formats.md](formats.md)。
 3. 「わからない」「どちらでもいい」「今は決めない」という回答は判断ノートに書かず、log だけに `note: null` で残す。
 4. 回答に一般化できる理由があれば、終了時の原則の追記案のためにメモしておく。
 
@@ -56,7 +56,7 @@
 
 ### 6. 終了する
 
-1. メモした理由があれば、原則の追記案をまとめて提示し、承認された文言だけを `docs/principles.md` に書く。手順は [recording.md](recording.md) の「原則の追記」。
+1. メモした理由があれば、原則の追記案をまとめて提示し、承認された文言だけを `memory/principles.md` に書く。手順は [recording.md](recording.md) の「原則の追記」。
 2. このセッションで書いた・書き換えた判断ノートの項目を一覧にして伝える（題材ファイル、見出し、決めたこと）。
 
 **完了条件:** セッションの全質問の log 行があり、原則の追記案が承認または却下されている。

@@ -5,12 +5,21 @@ description: grilling や brainstorming などの明確化質問のラウンド�
 
 # decision-twin
 
-明確化質問のラウンドを受け取り、ユーザーが過去に残した判断（`docs/decisions/` の判断ノート、`docs/principles.md`）とリポジトリの事実だけを根拠に代理回答する。根拠で決まらない判断と高影響な判断はユーザーに確認し、ユーザーの回答を判断ノートに蓄積する。
+明確化質問のラウンドを受け取り、ユーザーが過去に残した判断（判断ノートと原則）とリポジトリの事実だけを根拠に代理回答する。根拠で決まらない判断と高影響な判断はユーザーに確認し、ユーザーの回答を判断ノートに蓄積する。
 
 入口は2つある。
 
 - **代理回答**: 質問のラウンドを受け取ったとき。下の手順1〜9に従う。
 - **学習**: ユーザーが学習を明示したとき（「decision-twin で学習したい」など）。手順は [learning.md](learning.md)。
+
+記憶（判断ノート・原則・ログ・設定）は、このスキルフォルダ（この SKILL.md があるフォルダ）の `memory/` に置く。以下、`memory/` はこのフォルダ内のパスを指す。記憶を共有する範囲はスキルを置いた場所で決まる（プロジェクト内ならそのプロジェクト専用、ユーザー直下なら全プロジェクト共通）ので、リポジトリ側に記憶を書かない。
+
+| パス | 内容 |
+| --- | --- |
+| `memory/decisions/<topic>.md` | 判断ノート |
+| `memory/principles.md` | 原則 |
+| `memory/log.jsonl` | 全質問の記録 |
+| `memory/config.json` | 設定（任意） |
 
 代理回答の確定のさせ方は承認モードで決まる。既定の `require`（shadow mode）では、代理回答は参考表示であり、ユーザーが承認するまで何も確定しない。`auto` では代理回答一覧を自動で確定する。どちらのモードでもエスカレーション質問は必ずユーザーに聞く。メインエージェントは質問役でもあるので、質問への回答は必ずこの手順の twin-answerer を通して作る。自分の意見で埋めた回答はユーザーの決定ではない。
 
@@ -18,18 +27,18 @@ description: grilling や brainstorming などの明確化質問のラウンド�
 
 ### 1. 準備（セッションで最初の1回）
 
-1. `.claude/agents/twin-answerer.md` と `.claude/agents/twin-verifier.md` があるか確認する。Claude Code で、ないときは `assets/templates/agents/` の2ファイルを `.claude/agents/` にコピーし、コピーしたことをユーザーに伝える（反映にはセッション再起動が必要な場合がある）。
+1. サブエージェント定義の置き場所を、スキルの置き場所に合わせて決める。スキルがプロジェクト内にあればそのプロジェクトの `.claude/agents/`、ユーザー直下（`~/.claude/skills/`）にあれば `~/.claude/agents/`。そこに `twin-answerer.md` と `twin-verifier.md` があるか確認する。Claude Code で、ないときは `assets/templates/agents/` の2ファイルをそこへコピーし、コピーしたことをユーザーに伝える（反映にはセッション再起動が必要な場合がある）。
 2. 使う経路を決め、`isolation` として記録する。
    - 設置したサブエージェントを起動できる: `agent`
    - 起動できない（未反映、Codex など）: テンプレート本文を汎用サブエージェントへのプロンプトとして渡す。サブエージェント自体がない環境では、answerer の作業を終えて回答 JSON をファイルに書き出してから、verifier の作業を別の手順として行う。どちらも `prompt-only`
-3. `.decision-twin/config.json` を読む。`confidence_threshold` があればその値、なければ `0.80` をしきい値にする。`approval` が `"auto"` なら承認モード auto、それ以外（未設定を含む）は `require`。
-4. `.decision-twin/` がなければ作る。`.gitignore` に入っていなければ、追加するかをユーザーに一度だけ提案する。
+3. `memory/config.json` を読む。`confidence_threshold` があればその値、なければ `0.80` をしきい値にする。`approval` が `"auto"` なら承認モード auto、それ以外（未設定を含む）は `require`。
+4. `memory/decisions/` がなければ作る。
 
 **完了条件:** isolation、しきい値、承認モードが決まっている。
 
 ### 2. ラウンドを受け取る
 
-1. ラウンドの各質問に `q-<ラウンド番号>-<連番>` の ID を振る。ラウンド番号は `.decision-twin/log.jsonl` の最大値 + 1。
+1. ラウンドの各質問に `q-<ラウンド番号>-<連番>` の ID を振る。ラウンド番号は `memory/log.jsonl` の最大値 + 1。
 2. 各質問を「質問文」と「質問役の推奨」に分ける。推奨（grilling の ➡️、選択肢に付いた「推奨」の印）は表示用のメモとしてだけ持ち、twin-answerer と twin-verifier には渡さない。
 
 ### 3. 分類する
@@ -53,7 +62,7 @@ twin-answerer を1回起動し、ラウンドの全質問をまとめて渡す�
 
 - 質問 ID と質問文の一覧
 - リポジトリのルートパス
-- 判断記録の場所: `docs/decisions/`（判断ノート）、`docs/principles.md`、`~/.decision-twin/principles.md`（あれば。読み取り専用）
+- 記憶の場所: `memory/decisions/`（判断ノート）と `memory/principles.md` の絶対パス
 
 会話の流れ、質問役の推奨、分類結果は渡さない。前のラウンドで確定した回答は判断ノートに書かれているので、answerer が自分で読む。返り値は回答オブジェクトの JSON 配列（形式は [formats.md](formats.md)）。
 
@@ -97,9 +106,9 @@ twin-verifier を起動し、各質問について「質問文・回答オブジ
 
 ユーザーの回答を受けたら、[recording.md](recording.md) に沿って記録する。
 
-1. 全質問について `.decision-twin/log.jsonl` に1行ずつ追記する。auto で自動確定した質問は `auto_accepted: true`、`human_answer: null`。
+1. 全質問について `memory/log.jsonl` に1行ずつ追記する。auto で自動確定した質問は `auto_accepted: true`、`human_answer: null`。
 2. エスカレーション質問への回答、上書き、承認された `INFERRED` / `PROPOSAL`（auto では自動確定した `INFERRED` / `PROPOSAL`）を判断ノートに書く。
-3. ユーザーが理由を述べていれば、原則の追記案をまとめて提示し、承認された文言だけを `docs/principles.md` に書く。
+3. ユーザーが理由を述べていれば、原則の追記案をまとめて提示し、承認された文言だけを `memory/principles.md` に書く。
 4. auto で自動確定した回答を、後のどの時点でもユーザーが上書きしたら、判断ノートを書き換え、log に `auto_override` 行を追記する。質問役に返し済みなら、上書き後の回答を質問役にも伝える。
 
 **完了条件:** ラウンドの全質問の行が log にあり、記録対象の全回答が判断ノートにある。
@@ -110,4 +119,4 @@ twin-verifier を起動し、各質問について「質問文・回答オブジ
 
 ## 集計
 
-代理回答の精度は `python3 scripts/report.py .decision-twin/log.jsonl` で集計する。分類ごとの Override Rate、Escalation Recall / Precision、自動確定の件数と後からの上書き率などを Markdown で出す。承認モードを auto にしてよいかの判断材料に使う。
+代理回答の精度は `python3 scripts/report.py memory/log.jsonl` で集計する。分類ごとの Override Rate、Escalation Recall / Precision、自動確定の件数と後からの上書き率などを Markdown で出す。承認モードを auto にしてよいかの判断材料に使う。

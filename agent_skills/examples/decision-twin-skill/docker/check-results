@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """decision-twin の実行結果を assets/expected-round.md と照合する。
 
-使い方: check-results <expected-round.md> <実行後の sample-repo> <元の sample-repo> <reports dir>
+使い方: check-results <expected-round.md> <実行後の memory> <元の memory> <reports dir>
 """
 import json
 import os
@@ -35,7 +35,7 @@ def parse_expected(path):
 
 
 def read_decisions(decisions, errors):
-    """docs/decisions の判断ノートを読み、id → 項目の辞書を返す。"""
+    """memory/decisions の判断ノートを読み、id → 項目の辞書を返す。"""
     notes = {}
     for name in sorted(os.listdir(decisions)):
         if not name.endswith(".md"):
@@ -57,11 +57,11 @@ def read_decisions(decisions, errors):
     return notes
 
 
-def main(expected_path, repo, original, reports):
+def main(expected_path, memory, original, reports):
     errors, warnings = [], []
     expected = parse_expected(expected_path)
 
-    log_path = os.path.join(repo, ".decision-twin", "log.jsonl")
+    log_path = os.path.join(memory, "log.jsonl")
     entries = {}
     if not os.path.exists(log_path):
         errors.append("log.jsonl がありません")
@@ -100,8 +100,8 @@ def main(expected_path, repo, original, reports):
             if exp["evidence"] not in ev:
                 errors.append(f"{qid}: 根拠に {exp['evidence']} がありません: {ev}")
 
-    orig_notes = read_decisions(os.path.join(original, "docs", "decisions"), [])
-    notes = read_decisions(os.path.join(repo, "docs", "decisions"), errors)
+    orig_notes = read_decisions(os.path.join(original, "decisions"), [])
+    notes = read_decisions(os.path.join(memory, "decisions"), errors)
 
     replaced = set()
     for row in entries.values():
@@ -139,9 +139,9 @@ def main(expected_path, repo, original, reports):
     if not os.path.exists(display) or os.path.getsize(display) == 0:
         errors.append("reports/round-1-display.md がありません")
 
-    with open(os.path.join(original, "docs", "principles.md"), encoding="utf-8") as f:
+    with open(os.path.join(original, "principles.md"), encoding="utf-8") as f:
         before = f.read()
-    with open(os.path.join(repo, "docs", "principles.md"), encoding="utf-8") as f:
+    with open(os.path.join(memory, "principles.md"), encoding="utf-8") as f:
         after = f.read()
     if not after.startswith(before.rstrip("\n")):
         errors.append("principles.md の既存の行が変更されています")

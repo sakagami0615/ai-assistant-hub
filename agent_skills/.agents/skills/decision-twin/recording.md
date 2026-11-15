@@ -25,7 +25,7 @@
 
 ## 判断ノートの書き方
 
-- 置き場所は `docs/decisions/<topic>.md`。テンプレートは [assets/templates/decision-note.md](assets/templates/decision-note.md)。
+- 置き場所はこのスキルフォルダの `memory/decisions/<topic>.md`。テンプレートは [assets/templates/decision-note.md](assets/templates/decision-note.md)。
 - 題材ファイルは、既存ファイルの見出しと項目から合うものを選ぶ。合うものがなければ新しく作る（`<topic>` は英語ケバブケース、見出しは日本語の表示名）。
 - 1項目1行で書く。
 
@@ -43,7 +43,7 @@
 
 1. ユーザーが回答の中で一般化できる理由（例:「外部公開する API は互換性を優先する」）を述べたときだけ、追記案を作る。AI の推測で一般化を足さない。
 2. 追記案はラウンドの記録の最後（学習フローでは終了時）にまとめて提示し、文言そのものの承認を求める。修正があれば修正後の文言を使う。
-3. 承認された案を `docs/principles.md` に次の形で追記する。ファイルがなければ作る。
+3. 承認された案を `memory/principles.md` に次の形で追記する。ファイルがなければ作る。
 
    ```
    - <原則1行>（出典: api#公開 API の互換維持期間、2026-11-15）

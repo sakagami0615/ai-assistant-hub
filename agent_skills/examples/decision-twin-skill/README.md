@@ -14,11 +14,12 @@ docker compose run --rm decision-twin-check
 
 | 場所 | 内容 |
 | --- | --- |
-| `assets/sample-repo/` | 判断ノート4本と原則を持つ小さな TODO API リポジトリ |
+| `assets/sample-repo/` | 小さな TODO API リポジトリ |
+| `assets/memory/` | 実行前にスキルの `memory/` へコピーする記憶（判断ノート4本と原則） |
 | `assets/round-1.md` | grilling 形式の質問ラウンド（8問） |
 | `assets/human-answers.md` | 人間役の回答。表示を書き出した後にだけ読ませます |
 | `assets/expected-round.md` | 各質問の期待結果。`docker/check-results` がこれを読んで照合します |
-| `reports/` | 表示、代理回答 JSON、log.jsonl、判断ノート、集計、照合結果（git 管理外） |
+| `reports/` | 表示、代理回答 JSON、実行後の `memory/`、集計、照合結果（git 管理外） |
 
 `reports/round-1-check.txt` の最終行が `結果: OK` なら合格です。`WARN` は、代理回答一覧に入る想定の質問が慎重側（確認質問）に倒れた場合などで、安全側の差分として扱います。
 

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """decision-twin の log.jsonl を集計し、shadow mode の精度指標を Markdown で出力する。
 
-使い方: python3 report.py .decision-twin/log.jsonl
+使い方: python3 report.py <スキルフォルダ>/memory/log.jsonl
 """
 import json
 import sys
