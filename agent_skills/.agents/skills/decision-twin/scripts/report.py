@@ -48,12 +48,13 @@ def compute(rows):
     answered = [r for r in qs if r.get("human_answer") is not None]
 
     by_class = OrderedDict()
-    for cls in CLASSES + sorted({r.get("class") for r in qs} - set(CLASSES)):
+    extra = sorted({r.get("class") for r in qs} - set(CLASSES) - {None})
+    for cls in CLASSES + extra + [None]:
         items = [r for r in qs if r.get("class") == cls]
         if not items:
             continue
         reviewed = [r for r in items if not r.get("escalated") and r.get("human_answer") is not None]
-        by_class[cls] = {
+        by_class[cls or "(未分類)"] = {
             "count": len(items),
             "escalated": sum(1 for r in items if r.get("escalated")),
             "override_rate": _rate(sum(1 for r in reviewed if r.get("overridden")), len(reviewed)),
@@ -64,7 +65,7 @@ def compute(rows):
         r for r in twin_answers
         if r.get("twin_status") in ASSERTIVE and (not r.get("evidence") or r.get("verifier") != "PASS")
     ]
-    supported = [r for r in twin_answers if r.get("verifier") == "PASS"]
+    supported = [r for r in twin_answers if r.get("evidence") and r.get("verifier") == "PASS"]
 
     tp = sum(1 for r in answered if r.get("escalated") and _needs_human(r))
     fp = sum(1 for r in answered if r.get("escalated") and not _needs_human(r))

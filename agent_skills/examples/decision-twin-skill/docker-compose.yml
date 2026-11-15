@@ -12,7 +12,8 @@ services:
       HOST_CODEX_HOME: /host-codex
       CODEX_MODEL: ${CODEX_MODEL:-}
     volumes:
-      - ${HOME}/.codex:/host-codex:ro
+      - ${HOME}/.codex/auth.json:/host-codex/auth.json:ro
+      - ${HOME}/.codex/config.toml:/host-codex/config.toml:ro
       - ./reports:/workspace/reports
     command:
       - /usr/local/bin/run-decision-twin-skill

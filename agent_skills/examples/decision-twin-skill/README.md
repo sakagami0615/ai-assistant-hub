@@ -8,7 +8,7 @@ decision-twin Skill を Codex でコンテナ内実行し、代理回答・エ�
 docker compose run --rm decision-twin-check
 ```
 
-ホストの `~/.codex` を読み取り専用でマウントし、Codex の認証情報を使います。モデルは `CODEX_MODEL` で指定できます。ホストの `config.toml` がコンテナ内の Codex で読めない場合は、`CODEX_VERSION=<ホストの版> docker compose build` で版を合わせてください。ポートは使いません。
+ホストの `~/.codex/auth.json` と `config.toml` だけを読み取り専用でマウントし、Codex の認証情報を使います。認証ファイルをコンテナに渡すので、信頼できる入力だけで実行してください。ファイルがない場合は先にホストで Codex にログインしてください。モデルは `CODEX_MODEL` で指定できます。ホストの `config.toml` がコンテナ内の Codex で読めない場合は、`CODEX_VERSION=<ホストの版> docker compose build` で版を合わせてください。ポートは使いません。
 
 ## 入力と結果
 

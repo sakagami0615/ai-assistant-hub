@@ -12,6 +12,7 @@ REQUIRED_LOG_KEYS = [
     "ts", "round", "question_id", "class", "impact", "reversibility", "twin_status",
     "confidence", "evidence", "verifier", "retries", "threshold", "isolation",
     "escalated", "escalation_rule", "human_answer", "overridden", "note", "replaces", "replaced_text",
+    "twin_answer", "question", "conflicts", "shown_recommendation", "auto_accepted",
 ]
 NOTE_LINE = re.compile(
     r"^- \*\*(?P<head>.+?)\*\*: (?P<body>.+)（(?P<date>\d{4}-\d{2}-\d{2})、"
@@ -24,12 +25,14 @@ def parse_expected(path):
     with open(path, encoding="utf-8") as f:
         for line in f:
             cells = [c.strip() for c in line.strip().strip("|").split("|")]
-            if len(cells) >= 5 and re.fullmatch(r"q-\d+-\d+", cells[0]):
+            if len(cells) >= 7 and re.fullmatch(r"q-\d+-\d+", cells[0]):
                 rows[cells[0]] = {
                     "escalation": cells[1],
                     "statuses": [] if cells[2] == "-" else [s.strip() for s in cells[2].split(",")],
                     "note": cells[3],
-                    "evidence": None if cells[4] == "-" else cells[4],
+                    "sources": [] if cells[4] == "-" else cells[4].split("、"),
+                    "word": None if cells[5] == "-" else cells[5],
+                    "evidence": None if cells[6] == "-" else cells[6],
                 }
     return rows
 
@@ -75,7 +78,7 @@ def main(expected_path, memory, original, reports):
                 except json.JSONDecodeError:
                     errors.append(f"log.jsonl {n}行目が JSON ではありません")
                     continue
-                if "question_id" not in row:
+                if "question_id" not in row or "type" in row:
                     continue
                 if row["question_id"] in entries:
                     errors.append(f"{row['question_id']} の行が重複しています")
@@ -110,33 +113,57 @@ def main(expected_path, memory, original, reports):
         if nid not in notes and nid not in replaced:
             errors.append(f"元の判断 {nid} が replaces なしで消えています")
 
+    # 書き換え・削除した項目は、元の行が replaced_text にそのまま残り、書き換え後は別の文面になっている
+    for qid, row in entries.items():
+        ids, texts = row.get("replaces") or [], row.get("replaced_text") or []
+        if len(ids) != len(texts):
+            errors.append(f"{qid}: replaced_text の件数が replaces と一致しません")
+            continue
+        for nid, text in zip(ids, texts):
+            if nid in orig_notes and text.strip() != orig_notes[nid]["line"].strip():
+                errors.append(f"{qid}: replaced_text が元の行と一致しません: {nid}")
+            if nid in orig_notes and nid in notes and notes[nid]["line"] == orig_notes[nid]["line"]:
+                errors.append(f"{qid}: {nid} は replaces に入っているのに行が書き換わっていません")
+
     for qid, exp in expected.items():
         row = entries.get(qid)
         if row is None:
             continue
         nid = row.get("note")
-        if exp["note"] == "あり":
+        want = exp["note"] == "あり" or (exp["note"] == "確認時のみ" and row.get("escalated") is True)
+        if want:
+            item = notes.get(nid or "")
             if not nid:
                 errors.append(f"{qid}: 判断ノートが書かれていません（note が空）")
-            elif nid not in notes:
+            elif item is None:
                 errors.append(f"{qid}: note={nid} の項目が判断ノートにありません")
-        if exp["note"] == "なし" and nid:
+            else:
+                sources = exp["sources"]
+                if qid == "q-1-5":
+                    sources = ["回答"] if row.get("escalated") else ["上書き"]
+                    if row.get("escalated") is False and row.get("overridden") is not True:
+                        errors.append("q-1-5: 一覧で上書きしたのに overridden が true ではありません")
+                if sources and item["src"] not in sources:
+                    errors.append(f"{qid}: 出所は {'、'.join(sources)} であるべきです（{item['src']}）")
+                if exp["word"] and not any(w.strip().replace(" ", "") in item["line"].replace(" ", "") for w in exp["word"].split(" または ")):
+                    errors.append(f"{qid}: 判断ノートの項目に「{exp['word']}」がありません: {item['line']}")
+        elif nid:
             errors.append(f"{qid}: 書くべきでない判断ノートの項目があります: {nid}")
 
-    row5 = entries.get("q-1-5", {})
-    item5 = notes.get(row5.get("note") or "")
-    if item5 and item5["src"] not in {"回答", "上書き"}:
-        errors.append(f"q-1-5: 出所は 回答 / 上書き であるべきです（{item5['src']}）")
-    if row5 and row5.get("escalated") is False and row5.get("overridden") is not True:
-        errors.append("q-1-5: 一覧で上書きしたのに overridden が true ではありません")
+    if entries.get("q-1-4", {}).get("human_answer") is not None:
+        errors.append("q-1-4: 保留したのに human_answer が null ではありません")
+
     row8 = entries.get("q-1-8", {})
-    if not any(str(r).startswith("privacy#") for r in row8.get("replaces") or []):
-        errors.append(f"q-1-8: replaces に privacy# の判断が入っていません（{row8.get('replaces')}）")
-    privacy = [(k, v) for k, v in notes.items() if k.startswith("privacy#")]
-    if any("TODO" in v["line"] and "物理削除" in v["line"] and not re.search(r"TODO[^。]*(除く|除き|以外)", v["line"]) for _, v in privacy):
+    excl = re.compile(r"TODO[^。]*(除く|除き|以外)")
+    privacy = [v["line"] for k, v in notes.items() if k.startswith("privacy#")]
+    if not privacy:
+        errors.append("q-1-8: privacy の判断が丸ごと消えています（範囲を絞る書き換えにするべきです）")
+    elif not any(excl.search(line) for line in privacy):
+        errors.append("q-1-8: privacy の判断に TODO を範囲から除く表現がありません")
+    if any("TODO" in line and "物理削除" in line and not excl.search(line) for line in privacy):
         errors.append("q-1-8: privacy の判断が TODO を含む物理削除のまま残っています")
-    if len(row8.get("replaced_text") or []) != len(row8.get("replaces") or []):
-        errors.append("q-1-8: replaced_text の件数が replaces と一致しません")
+    if not any(str(x).startswith("privacy#") for x in row8.get("replaces") or []):
+        errors.append(f"q-1-8: replaces に privacy# の判断が入っていません（{row8.get('replaces')}）")
 
     display = os.path.join(reports, "round-1-display.md")
     if not os.path.exists(display) or os.path.getsize(display) == 0:

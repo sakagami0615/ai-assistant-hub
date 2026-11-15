@@ -51,8 +51,8 @@ class MetricsTest(unittest.TestCase):
         m = report.compute(rows)
         # 分母は UNKNOWN 以外の4件、根拠なしで断定したのは a, b
         self.assertAlmostEqual(m["unsupported_decision_rate"], 2 / 4)
-        # PASS は a, c, d
-        self.assertAlmostEqual(m["evidence_support_rate"], 3 / 4)
+        # 根拠があって PASS は d だけ（a, c は根拠なし）
+        self.assertAlmostEqual(m["evidence_support_rate"], 1 / 4)
 
     def test_escalation_recall_and_precision(self):
         rows = [
@@ -85,6 +85,15 @@ class MetricsTest(unittest.TestCase):
         # TP=1（a）、FN=1（自動確定後に上書きされた c）。precision は変わらない
         self.assertAlmostEqual(m["escalation_recall"], 1 / 2)
         self.assertAlmostEqual(m["escalation_precision"], 1.0)
+
+    def test_unclassified_and_unknown_classes_do_not_break_sorting(self):
+        rows = [row(question_id="a", **{"class": None}), row(question_id="b", **{"class": "ODD"}), row(question_id="c")]
+        m = report.compute(rows)
+        self.assertEqual(set(m["by_class"]), {"REPO_FACT", "ODD", "(未分類)"})
+
+    def test_late_answer_is_not_a_question(self):
+        rows = [row(question_id="a"), {"type": "late_answer", "question_id": "a", "human_answer": "同意"}]
+        self.assertEqual(report.compute(rows)["total"], 1)
 
     def test_typed_rows_are_not_questions_and_auto_metrics(self):
         rows = [

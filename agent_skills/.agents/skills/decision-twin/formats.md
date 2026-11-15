@@ -60,7 +60,7 @@
 | `verifier` | 最終の判定 |
 | `escalation_rule` | 当てはまった規則番号。一覧に入れたなら `null` |
 | `shown_recommendation` | エスカレーション質問で表示した推奨の出所: `twin` / `questioner` / `none`。一覧に入れた質問は `twin` |
-| `human_answer` | ユーザーの回答。一括承認なら `"同意"`、保留と自動確定なら `null` |
+| `human_answer` | ユーザーの回答。一括承認なら `"同意"`、保留・承認待ち・自動確定なら `null` |
 | `overridden` | 代理回答一覧に入れた質問を、ユーザーが別の回答に変えたら `true` |
 | `auto_accepted` | 承認モード auto で、一覧の回答が自動確定したら `true` |
 | `note` | この質問で書いた（書き換えた）判断ノートの id。書かなければ `null` |
@@ -72,11 +72,13 @@
 ```json
 {"ts": "...", "type": "learning", "session": 1, "question_id": "l-1-3", "topic": "api", "question": "...", "choices": ["offset", "cursor"], "human_answer": "cursor", "note": "api#一覧のページング方式", "replaces": [], "replaced_text": []}
 {"ts": "...", "type": "auto_override", "round": 2, "question_id": "q-2-4", "human_answer": "50", "note": "api#一覧の既定ページサイズ", "replaces": ["api#一覧の既定ページサイズ"], "replaced_text": ["- **一覧の既定ページサイズ**: 20 にする。理由: （記載なし）（2026-11-10、承認、根拠: api#一覧のページング方式）"]}
+{"ts": "...", "type": "late_answer", "round": 2, "question_id": "q-2-3", "human_answer": "同意", "note": "api#一覧のソート順", "replaces": [], "replaced_text": []}
 {"ts": "...", "type": "principle_rejected", "round": 1, "text": "...", "source_note": "api#公開 API の互換維持期間"}
 ```
 
 - `learning`: 学習フローの1問。`session` は log の learning 行の最大値 + 1、`question_id` は `l-<session>-<連番>`。記録しなかった回答（「わからない」など）は `note: null`。
 - `auto_override`: auto で自動確定した回答を、後からユーザーが上書きした。書き換え前の行を `replaced_text` に残す。
+- `late_answer`: 保留・承認待ち・一覧の未回答だった質問に、後からユーザーが承認または回答した。元の質問の行は書き換えない。
 
 ## 表示形式
 
@@ -98,12 +100,12 @@ grilling と同じ形式で書く。各質問に、確認する理由（規則�
 | ID | 分類 | impact | status | 回答 | 根拠（日付） |
 | --- | --- | --- | --- | --- | --- |
 | q-1-1 | REPO_FACT | LOW | FACT | session 認証 | `todo_project/settings.py` |
-| q-1-4 | USER_PREFERENCE | MEDIUM | ⚠ INFERRED | cron で済ませる | principles#3（2026-06-12） |
+| q-1-4 | USER_PREFERENCE | MEDIUM | ⚠ INFERRED | cron で済ませる | principles#1（2026-06-01） |
 
 - `INFERRED` と `PROPOSAL` には ⚠ を付け、決定ではないと分かるようにする。
 - 根拠の日付が他の根拠より古い、または 180 日以上前なら「（古い）」と書き添える。
 
-承認モード auto では、見出しを「② 自動で確定した回答」にする。`PROPOSAL` はこの表に入れず、同じ列の別表「承認待ちの回答」にして、承認されるまで確定しない。
+承認モード auto では、見出しを「② 自動で確定した回答」にする。承認待ちの対象（`PROPOSAL`、根拠が出所 `承認` / `自動` の項目だけの `INFERRED`。[SKILL.md](SKILL.md) 冒頭）はこの表に入れず、同じ列の別表「承認待ちの回答」にして、承認されるまで確定しない。
 
 ### ③ 依頼
 
@@ -113,8 +115,14 @@ grilling と同じ形式で書く。各質問に、確認する理由（規則�
 一覧はまとめて承認してよいですか。変えたい番号は「q-1-5: 50 にする」、今は決めない番号は「q-1-4: 保留」のように書いてください。分類の誤りも指摘できます。
 ```
 
-承認モード auto:
+承認モード auto で、確認質問も承認待ちもない（確定済み）:
 
 ```
-②の回答は確定して進めました。変えたい番号があれば「q-1-5: 50 にする」のように書いてください。いつでも上書きできます。承認待ちの回答（ある場合）は、承認するか、変えたい番号を書いてください。
+②の回答は確定して進めました。変えたい番号があれば「q-1-5: 50 にする」のように書いてください。いつでも上書きできます。
+```
+
+承認モード auto で、確認質問か承認待ちがある:
+
+```
+②の回答は、ご返事の後に確定します。変えたい番号は「q-1-5: 50 にする」のように書いてください。承認待ちの回答は、承認するか番号を指定してください。
 ```

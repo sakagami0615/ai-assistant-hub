@@ -11,9 +11,14 @@ export CODEX_HOME
 
 command -v codex >/dev/null 2>&1 || { echo "codex command is not available in this container" >&2; exit 1; }
 
-if [[ -d "$HOST_CODEX_HOME" && ! -e "$CODEX_HOME/auth.json" ]]; then
+# ホストの Codex 設定は、認証と設定の2ファイルだけを受け取る（履歴やセッションは渡さない）
+if [[ ! -e "$CODEX_HOME/auth.json" ]]; then
+  [[ -f "$HOST_CODEX_HOME/auth.json" ]] || { echo "~/.codex/auth.json がありません。ホストで codex login を済ませてください" >&2; exit 1; }
   mkdir -p "$CODEX_HOME"
-  cp -a "$HOST_CODEX_HOME/." "$CODEX_HOME/"
+  cp "$HOST_CODEX_HOME/auth.json" "$CODEX_HOME/auth.json"
+  if [[ -f "$HOST_CODEX_HOME/config.toml" ]]; then
+    cp "$HOST_CODEX_HOME/config.toml" "$CODEX_HOME/config.toml"
+  fi
 fi
 
 # 毎回まっさらなサンプルリポジトリから始める
@@ -77,7 +82,7 @@ echo
 check-results "$ASSETS_DIR/expected-round.md" "$MEMORY_DIR" "$ASSETS_DIR/memory" "$REPORTS_DIR" | tee "$REPORTS_DIR/round-1-check.txt" || status=$?
 
 # 記憶はスキルフォルダにだけ書かれ、対象リポジトリには書かれないこと
-if [[ -e "$RUN_REPO/.decision-twin" || -e "$RUN_REPO/docs/decisions" || -e "$RUN_REPO/docs/principles.md" ]]; then
+if [[ -n "$(git -C "$RUN_REPO" status --porcelain)" ]]; then
   echo "FAIL: 対象リポジトリに記憶が書かれています" | tee -a "$REPORTS_DIR/round-1-check.txt"
   exit 1
 fi
