@@ -1,0 +1,120 @@
+#!/usr/bin/env python3
+"""decision-twin の log.jsonl を集計し、shadow mode の精度指標を Markdown で出力する。
+
+使い方: python3 report.py .decision-twin/log.jsonl
+"""
+import json
+import sys
+from collections import OrderedDict
+
+CLASSES = ["REPO_FACT", "EXISTING_DECISION", "USER_PREFERENCE", "NOVEL_COMMITMENT"]
+ASSERTIVE = {"FACT", "EXPLICIT_DECISION", "INFERRED"}
+
+
+def load(path):
+    rows = []
+    with open(path, encoding="utf-8") as f:
+        for line in f:
+            line = line.strip()
+            if line:
+                rows.append(json.loads(line))
+    return rows
+
+
+def _rate(num, den):
+    return num / den if den else None
+
+
+def _agreed(r):
+    return r.get("human_answer") == "同意" or r.get("human_answer") == r.get("twin_answer")
+
+
+def _needs_human(r):
+    """人間の判断が実際に必要だったか（保留は呼び出し側で除外する）。"""
+    if r.get("escalated"):
+        return r.get("twin_status") == "UNKNOWN" or not _agreed(r)
+    return bool(r.get("overridden"))
+
+
+def compute(rows):
+    qs = [r for r in rows if "question_id" in r]
+    answered = [r for r in qs if r.get("human_answer") is not None]
+
+    by_class = OrderedDict()
+    for cls in CLASSES + sorted({r.get("class") for r in qs} - set(CLASSES)):
+        items = [r for r in qs if r.get("class") == cls]
+        if not items:
+            continue
+        reviewed = [r for r in items if not r.get("escalated") and r.get("human_answer") is not None]
+        by_class[cls] = {
+            "count": len(items),
+            "escalated": sum(1 for r in items if r.get("escalated")),
+            "override_rate": _rate(sum(1 for r in reviewed if r.get("overridden")), len(reviewed)),
+        }
+
+    twin_answers = [r for r in qs if r.get("twin_status") != "UNKNOWN"]
+    unsupported = [
+        r for r in twin_answers
+        if r.get("twin_status") in ASSERTIVE and (not r.get("evidence") or r.get("verifier") != "PASS")
+    ]
+    supported = [r for r in twin_answers if r.get("verifier") == "PASS"]
+
+    tp = sum(1 for r in answered if r.get("escalated") and _needs_human(r))
+    fp = sum(1 for r in answered if r.get("escalated") and not _needs_human(r))
+    fn = sum(1 for r in answered if not r.get("escalated") and _needs_human(r))
+
+    non_escalated = [r for r in answered if not r.get("escalated")]
+    return {
+        "total": len(qs),
+        "escalation_rate": _rate(sum(1 for r in qs if r.get("escalated")), len(qs)),
+        "override_rate": _rate(sum(1 for r in non_escalated if r.get("overridden")), len(non_escalated)),
+        "unsupported_decision_rate": _rate(len(unsupported), len(twin_answers)),
+        "evidence_support_rate": _rate(len(supported), len(twin_answers)),
+        "escalation_recall": _rate(tp, tp + fn),
+        "escalation_precision": _rate(tp, tp + fp),
+        "by_class": by_class,
+    }
+
+
+def _fmt(v):
+    return "該当なし" if v is None else f"{v:.1%}"
+
+
+def render(m):
+    lines = [
+        "# decision-twin 集計",
+        "",
+        f"質問数: {m['total']}",
+        "",
+        "| 指標 | 値 |",
+        "| --- | --- |",
+        f"| Human Override Rate | {_fmt(m['override_rate'])} |",
+        f"| Unsupported Decision Rate | {_fmt(m['unsupported_decision_rate'])} |",
+        f"| Escalation Recall | {_fmt(m['escalation_recall'])} |",
+        f"| Escalation Precision | {_fmt(m['escalation_precision'])} |",
+        f"| Evidence Support Rate | {_fmt(m['evidence_support_rate'])} |",
+        f"| エスカレーション率 | {_fmt(m['escalation_rate'])} |",
+        "",
+        "| 分類 | 件数 | エスカレーション | Override Rate |",
+        "| --- | --- | --- | --- |",
+    ]
+    for cls, c in m["by_class"].items():
+        lines.append(f"| {cls} | {c['count']} | {c['escalated']} | {_fmt(c['override_rate'])} |")
+    lines += [
+        "",
+        "Escalation Recall / Precision は近似値です。上書きされた非エスカレーション問を見逃し、"
+        "twin の回答に同意したエスカレーション問を質問しすぎとして数えています。保留した質問は除外しています。",
+    ]
+    return "\n".join(lines) + "\n"
+
+
+def main(argv):
+    if len(argv) != 2:
+        print(__doc__.strip(), file=sys.stderr)
+        return 2
+    sys.stdout.write(render(compute(load(argv[1]))))
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main(sys.argv))

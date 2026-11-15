@@ -1,0 +1,72 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+SKILL_DIR="${SKILL_DIR:-/workspace/skills/decision-twin}"
+ASSETS_DIR="${ASSETS_DIR:-/workspace/assets}"
+REPORTS_DIR="${REPORTS_DIR:-/workspace/reports}"
+RUN_REPO="${RUN_REPO:-/workspace/run/sample-repo}"
+CODEX_HOME="${CODEX_HOME:-/workspace/codex-home}"
+HOST_CODEX_HOME="${HOST_CODEX_HOME:-/host-codex}"
+export CODEX_HOME
+
+command -v codex >/dev/null 2>&1 || { echo "codex command is not available in this container" >&2; exit 1; }
+
+if [[ -d "$HOST_CODEX_HOME" && ! -e "$CODEX_HOME/auth.json" ]]; then
+  mkdir -p "$CODEX_HOME"
+  cp -a "$HOST_CODEX_HOME/." "$CODEX_HOME/"
+fi
+
+# 毎回まっさらなサンプルリポジトリから始める
+rm -rf "$RUN_REPO" "$REPORTS_DIR"/round-1-* "$REPORTS_DIR"/result
+mkdir -p "$(dirname "$RUN_REPO")" "$REPORTS_DIR"
+cp -a "$ASSETS_DIR/sample-repo" "$RUN_REPO"
+git -C "$RUN_REPO" init -q
+git -C "$RUN_REPO" config user.name "harness-user"
+git -C "$RUN_REPO" config user.email "harness@example.invalid"
+git -C "$RUN_REPO" add -A
+git -C "$RUN_REPO" commit -qm "sample repo"
+
+PROMPT_PATH="$REPORTS_DIR/round-1-prompt.md"
+cat > "$PROMPT_PATH" <<EOF
+decision-twin Skill の動作確認です。Skill 本体は $SKILL_DIR/SKILL.md です。リンクされたファイルも Skill の手順に従って読んでください。
+
+対象リポジトリ: $RUN_REPO
+受け取るラウンド: $ASSETS_DIR/round-1.md （grilling のラウンド1。Q番号 n の質問 ID は q-1-n）
+
+このコンテナは Codex で、Claude Code のサブエージェントはありません。Skill の手順1に従い、isolation は "prompt-only" として、
+answerer の作業（$SKILL_DIR/assets/templates/agents/twin-answerer.md）を終えて回答 JSON を $REPORTS_DIR/round-1-answers.json に書き出してから、
+verifier の作業（同 twin-verifier.md）を別の手順として行い、判定を $REPORTS_DIR/round-1-verdicts.json に書き出してください。
+answerer の作業では、ラウンドに書かれた質問役の推奨（➡️）を使わないでください。
+
+ユーザーへの表示（手順7）は、チャットに出す代わりに $REPORTS_DIR/round-1-display.md に書き出してください。
+人間役の回答は $ASSETS_DIR/human-answers.md にあります。display を書き出した後で初めて読み、それをユーザーの回答として手順8以降を行ってください。
+.gitignore の追加提案は不要です（提案したものとして扱い、変更しないでください）。
+
+最後に、ラウンドの処理結果の要約を日本語で書いてください。
+EOF
+
+echo "Running Codex decision-twin check..."
+codex_args=(
+  --dangerously-bypass-approvals-and-sandbox
+  exec
+  --cd "$RUN_REPO"
+  --skip-git-repo-check
+  --ephemeral
+  --output-last-message "$REPORTS_DIR/round-1-summary.md"
+)
+if [[ -n "${CODEX_MODEL:-}" ]]; then
+  codex_args+=(--model "$CODEX_MODEL")
+fi
+codex "${codex_args[@]}" - < "$PROMPT_PATH"
+
+# 結果を reports にコピーし、照合する
+mkdir -p "$REPORTS_DIR/result"
+cp -a "$RUN_REPO/docs" "$REPORTS_DIR/result/"
+if [[ -d "$RUN_REPO/.decision-twin" ]]; then cp -a "$RUN_REPO/.decision-twin" "$REPORTS_DIR/result/"; fi
+
+if [[ -f "$RUN_REPO/.decision-twin/log.jsonl" ]]; then
+  python3 "$SKILL_DIR/scripts/report.py" "$RUN_REPO/.decision-twin/log.jsonl" > "$REPORTS_DIR/round-1-metrics.md"
+fi
+
+echo
+check-results "$ASSETS_DIR/expected-round.md" "$RUN_REPO" "$ASSETS_DIR/sample-repo" "$REPORTS_DIR" | tee "$REPORTS_DIR/round-1-check.txt"

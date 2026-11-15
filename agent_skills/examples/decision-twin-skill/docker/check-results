@@ -1,0 +1,158 @@
+#!/usr/bin/env python3
+"""decision-twin の実行結果を assets/expected-round.md と照合する。
+
+使い方: check-results <expected-round.md> <実行後の sample-repo> <元の sample-repo> <reports dir>
+"""
+import filecmp
+import json
+import os
+import re
+import sys
+
+REQUIRED_LOG_KEYS = [
+    "ts", "round", "question_id", "class", "impact", "reversibility", "twin_status",
+    "confidence", "evidence", "verifier", "retries", "threshold", "isolation",
+    "escalated", "escalation_rule", "human_answer", "overridden", "adr",
+]
+REQUIRED_ADR_KEYS = ["id", "title", "owner", "date", "scope", "source", "supersedes"]
+ADR_SOURCES = {"human", "approved-inferred", "approved-proposal"}
+
+
+def parse_expected(path):
+    rows = {}
+    with open(path, encoding="utf-8") as f:
+        for line in f:
+            cells = [c.strip() for c in line.strip().strip("|").split("|")]
+            if len(cells) >= 5 and re.fullmatch(r"q-\d+-\d+", cells[0]):
+                rows[cells[0]] = {
+                    "escalation": cells[1],
+                    "statuses": [] if cells[2] == "-" else [s.strip() for s in cells[2].split(",")],
+                    "adr": cells[3],
+                    "evidence": None if cells[4] == "-" else cells[4],
+                }
+    return rows
+
+
+def frontmatter(path):
+    with open(path, encoding="utf-8") as f:
+        text = f.read()
+    m = re.match(r"---\n(.*?)\n---", text, re.S)
+    data = {}
+    if m:
+        for line in m.group(1).splitlines():
+            if ":" in line:
+                k, v = line.split(":", 1)
+                data[k.strip()] = v.split("#", 1)[0].strip()
+    return data, text
+
+
+def main(expected_path, repo, original, reports):
+    errors, warnings = [], []
+    expected = parse_expected(expected_path)
+
+    log_path = os.path.join(repo, ".decision-twin", "log.jsonl")
+    entries = {}
+    if not os.path.exists(log_path):
+        errors.append("log.jsonl がありません")
+    else:
+        with open(log_path, encoding="utf-8") as f:
+            for n, line in enumerate(f, 1):
+                if not line.strip():
+                    continue
+                try:
+                    row = json.loads(line)
+                except json.JSONDecodeError:
+                    errors.append(f"log.jsonl {n}行目が JSON ではありません")
+                    continue
+                if "question_id" not in row:
+                    continue
+                if row["question_id"] in entries:
+                    errors.append(f"{row['question_id']} の行が重複しています")
+                entries[row["question_id"]] = row
+
+    for qid, exp in expected.items():
+        row = entries.get(qid)
+        if row is None:
+            errors.append(f"{qid} の log 行がありません")
+            continue
+        missing = [k for k in REQUIRED_LOG_KEYS if k not in row]
+        if missing:
+            errors.append(f"{qid}: log の項目が足りません: {', '.join(missing)}")
+        if exp["escalation"] == "必須" and row.get("escalated") is not True:
+            errors.append(f"{qid}: 確認質問にすべきなのに escalated={row.get('escalated')}")
+        if exp["escalation"] == "しない" and row.get("escalated") is not False:
+            warnings.append(f"{qid}: 代理回答一覧に入る想定だが escalated={row.get('escalated')}（規則{row.get('escalation_rule')}）")
+        if exp["statuses"] and row.get("twin_status") not in exp["statuses"]:
+            errors.append(f"{qid}: twin_status={row.get('twin_status')} は許容外（{', '.join(exp['statuses'])}）")
+        if exp["evidence"]:
+            ev = json.dumps(row.get("evidence", []), ensure_ascii=False)
+            if exp["evidence"] not in ev:
+                errors.append(f"{qid}: 根拠に {exp['evidence']} がありません: {ev}")
+        if qid == "q-1-3" and "ADR-002" in json.dumps(row.get("evidence", [])) and "ADR-004" not in json.dumps(row.get("evidence", [])):
+            errors.append("q-1-3: supersede された ADR-002 だけを根拠にしています")
+
+    decisions = os.path.join(repo, "docs", "decisions")
+    orig_decisions = os.path.join(original, "docs", "decisions")
+    for name in sorted(os.listdir(orig_decisions)):
+        target = os.path.join(decisions, name)
+        if not os.path.exists(target) or not filecmp.cmp(os.path.join(orig_decisions, name), target, shallow=False):
+            errors.append(f"既存の {name} が変更または削除されています")
+
+    new_adrs = {}
+    for name in sorted(set(os.listdir(decisions)) - set(os.listdir(orig_decisions))):
+        if not name.endswith(".md"):
+            continue
+        data, text = frontmatter(os.path.join(decisions, name))
+        missing = [k for k in REQUIRED_ADR_KEYS if k not in data]
+        if missing:
+            errors.append(f"{name}: frontmatter の項目が足りません: {', '.join(missing)}")
+        if data.get("source") not in ADR_SOURCES:
+            errors.append(f"{name}: source={data.get('source')} は許可されていません")
+        qids = set(re.findall(r"q-\d+-\d+", text))
+        for qid in qids:
+            new_adrs.setdefault(qid, []).append((name, data))
+        if not qids:
+            warnings.append(f"{name}: どの質問の ADR か（question_id）が書かれていません")
+
+    for qid, exp in expected.items():
+        written = new_adrs.get(qid, [])
+        if exp["adr"] == "あり" and not written:
+            errors.append(f"{qid}: ADR が書かれていません")
+        if exp["adr"] == "なし" and written:
+            errors.append(f"{qid}: 書くべきでない ADR があります: {written[0][0]}")
+
+    for name, data in new_adrs.get("q-1-5", []):
+        if data.get("source") != "human":
+            errors.append(f"q-1-5: {name} の source は human であるべきです（{data.get('source')}）")
+    row5 = entries.get("q-1-5", {})
+    if row5 and row5.get("escalated") is False and row5.get("overridden") is not True:
+        errors.append("q-1-5: 一覧で上書きしたのに overridden が true ではありません")
+    if not any("ADR-006" in d.get("supersedes", "") for _, d in new_adrs.get("q-1-8", [])):
+        errors.append("q-1-8: 新しい ADR が ADR-006 を supersede していません")
+
+    display = os.path.join(reports, "round-1-display.md")
+    if not os.path.exists(display) or os.path.getsize(display) == 0:
+        errors.append("reports/round-1-display.md がありません")
+
+    with open(os.path.join(original, "docs", "principles.md"), encoding="utf-8") as f:
+        before = f.read()
+    with open(os.path.join(repo, "docs", "principles.md"), encoding="utf-8") as f:
+        after = f.read()
+    if not after.startswith(before.rstrip("\n")):
+        errors.append("principles.md の既存の行が変更されています")
+    elif after.strip() == before.strip():
+        warnings.append("principles.md に原則が追記されていません（q-1-6 の理由から追記案が出る想定）")
+
+    for w in warnings:
+        print(f"WARN: {w}")
+    for e in errors:
+        print(f"FAIL: {e}")
+    print(f"結果: {'NG' if errors else 'OK'}（失敗 {len(errors)} 件、警告 {len(warnings)} 件）")
+    return 1 if errors else 0
+
+
+if __name__ == "__main__":
+    if len(sys.argv) != 5:
+        print(__doc__.strip(), file=sys.stderr)
+        sys.exit(2)
+    sys.exit(main(*sys.argv[1:]))

@@ -1,0 +1,18 @@
+services:
+  decision-twin-check:
+    build:
+      context: ../..
+      dockerfile: examples/decision-twin-skill/docker/Dockerfile
+      args:
+        CODEX_VERSION: ${CODEX_VERSION:-0.165.0}
+    image: decision-twin-check:local
+    working_dir: /workspace
+    environment:
+      CODEX_HOME: /workspace/codex-home
+      HOST_CODEX_HOME: /host-codex
+      CODEX_MODEL: ${CODEX_MODEL:-}
+    volumes:
+      - ${HOME}/.codex:/host-codex:ro
+      - ./reports:/workspace/reports
+    command:
+      - /usr/local/bin/run-decision-twin-skill
