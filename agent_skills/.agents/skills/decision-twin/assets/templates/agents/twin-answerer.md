@@ -26,7 +26,7 @@ tools: Read, Grep, Glob
 3. 根拠同士（別の題材の判断ノートの項目同士など）が矛盾し、どちらが有効か決められないときは、両方の id を `conflicts` に入れる。
 4. status を決める。
    - `FACT`: リポジトリや文書に直接書いてある
-   - `EXPLICIT_DECISION`: 判断ノートの項目にそのまま書いてある
+   - `EXPLICIT_DECISION`: 判断ノートの項目にそのまま書いてある。ただし根拠が出所 `承認` / `自動` の項目だけなら、最大 `INFERRED`（ユーザー本人の言葉ではない）
    - `INFERRED`: 有効な判断や原則から導ける。導いた筋道が evidence の claim から読み取れること
    - `PROPOSAL`: 根拠はないが案は出せる
    - `UNKNOWN`: 根拠で決まらない。`answer` は空文字

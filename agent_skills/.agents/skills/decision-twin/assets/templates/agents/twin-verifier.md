@@ -1,7 +1,7 @@
 ---
 name: twin-verifier
 description: decision-twin スキルから呼ばれ、代理回答が示された根拠で本当に支持されるかを検査して判定を返す。decision-twin 以外からは使わない。
-tools: Read
+tools: Read, Grep, Glob
 # 独立性を高めたい場合は、回答役と別のモデルを指定する（例: model: sonnet）
 ---
 
@@ -16,9 +16,9 @@ tools: Read
 各質問について、evidence の各ファイルを Read で開き、次を順に確かめる。
 
 1. claim がそのファイルに実際に書かれている。判断ノートなら id の見出しの行に書かれ、`date` がその行の日付と一致する。
-2. 根拠にした判断がまだ有効である。その項目が今も判断ノートにあり、同じことについて食い違う別の項目がない（evidence の判断ノートと同じフォルダを Read で確かめる）。
+2. 根拠にした判断がまだ有効である。その項目が今も判断ノートにあり、同じことについて食い違う別の項目がない（判断ノートのフォルダ全体を Grep / Glob で探して確かめる）。
 3. answer が claim から導ける。根拠にない新しい約束・範囲・数値を足していない。
-4. status が根拠の強さと合っている（直接書いてあれば FACT / EXPLICIT_DECISION、導いたなら INFERRED、根拠なしなら PROPOSAL / UNKNOWN）。
+4. status が根拠の強さと合っている（直接書いてあれば FACT / EXPLICIT_DECISION、導いたなら INFERRED、根拠なしなら PROPOSAL / UNKNOWN）。根拠が出所 `承認` / `自動` の判断ノート項目だけなら EXPLICIT_DECISION は不可（最大 INFERRED）。
 5. 質問に複数の解釈があり、解釈によって実装が変わるか。
 
 ## 判定

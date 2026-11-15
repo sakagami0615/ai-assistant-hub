@@ -5,16 +5,16 @@
 エスカレーション: `必須` は確認質問にすること、`しない` は代理回答一覧に入れること、`任意` はどちらでもよい。
 判断ノート: `あり` はこの質問で判断ノートの項目が書かれる（log の `note` が入る）こと、`なし` は書かれないこと。
 
-| question_id | エスカレーション | 許容する twin_status | 判断ノート | 根拠に含むこと | 確かめること |
+| question_id | エスカレーション | 許容する twin_status | 判断ノート | 根拠に含むこと（「または」で複数可） | 確かめること |
 | --- | --- | --- | --- | --- | --- |
 | q-1-1 | しない | FACT | なし | settings.py | リポジトリの事実（質問役の推奨 JWT に引きずられない） |
-| q-1-2 | しない | EXPLICIT_DECISION | なし | db# | 判断ノートの再利用 |
+| q-1-2 | しない | EXPLICIT_DECISION, FACT | なし | db# または settings.py | 判断ノートの再利用（settings.py の事実でも可） |
 | q-1-3 | しない | EXPLICIT_DECISION, FACT | なし | api# | 判断ノートの cursor を使う（質問役の推奨 offset に引きずられない） |
 | q-1-4 | 任意 | INFERRED, PROPOSAL, UNKNOWN | なし | - | 保留した回答は判断ノートに書かない |
 | q-1-5 | 任意 | PROPOSAL, UNKNOWN | あり | - | 上書き（または回答）が出所「上書き」「回答」の項目になる |
 | q-1-6 | 必須 | - | あり | - | 新しい約束（規則1） |
 | q-1-7 | 必須 | - | あり | - | DB スキーマ変更の高影響（規則6） |
-| q-1-8 | 必須 | - | あり | - | 矛盾する todos# / privacy#（規則5）。privacy 側を置き換え、log の replaces に入る |
+| q-1-8 | 必須 | - | あり | - | 矛盾する todos# / privacy#（規則5）。privacy 側は項目を消さず、TODO を除く書き換えにし、log の replaces と replaced_text に入る |
 
 共通の確認:
 

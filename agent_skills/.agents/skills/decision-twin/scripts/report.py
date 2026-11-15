@@ -69,6 +69,8 @@ def compute(rows):
     tp = sum(1 for r in answered if r.get("escalated") and _needs_human(r))
     fp = sum(1 for r in answered if r.get("escalated") and not _needs_human(r))
     fn = sum(1 for r in answered if not r.get("escalated") and _needs_human(r))
+    # 自動確定した後に上書きされた質問も、確認すべきだった見逃しとして数える
+    fn += len(auto_overridden)
 
     non_escalated = [r for r in answered if not r.get("escalated")]
     return {
@@ -115,8 +117,8 @@ def render(m):
         lines.append(f"| {cls} | {c['count']} | {c['escalated']} | {_fmt(c['override_rate'])} |")
     lines += [
         "",
-        "Escalation Recall / Precision は近似値です。上書きされた非エスカレーション問を見逃し、"
-        "twin の回答に同意したエスカレーション問を質問しすぎとして数えています。保留した質問と、承認モード auto で自動確定した質問は除外しています。",
+        "Escalation Recall / Precision は近似値です。上書きされた非エスカレーション問（自動確定した後に上書きされたものを含む）を見逃し、"
+        "twin の回答に同意したエスカレーション問を質問しすぎとして数えています。保留した質問は除外し、承認モード auto で自動確定した質問は、後から上書きされた場合だけ見逃しとして数えています。",
     ]
     return "\n".join(lines) + "\n"
 

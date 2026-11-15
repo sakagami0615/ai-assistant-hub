@@ -74,6 +74,18 @@ class MetricsTest(unittest.TestCase):
         self.assertAlmostEqual(m["escalation_recall"], 2 / 3)
         self.assertAlmostEqual(m["escalation_precision"], 2 / 4)
 
+    def test_auto_override_counts_as_escalation_miss(self):
+        rows = [
+            row(question_id="a", escalated=True, human_answer="別案"),
+            row(question_id="b", human_answer=None, auto_accepted=True),
+            row(question_id="c", human_answer=None, auto_accepted=True),
+            {"type": "auto_override", "question_id": "c", "human_answer": "50"},
+        ]
+        m = report.compute(rows)
+        # TP=1（a）、FN=1（自動確定後に上書きされた c）。precision は変わらない
+        self.assertAlmostEqual(m["escalation_recall"], 1 / 2)
+        self.assertAlmostEqual(m["escalation_precision"], 1.0)
+
     def test_typed_rows_are_not_questions_and_auto_metrics(self):
         rows = [
             row(question_id="a"),

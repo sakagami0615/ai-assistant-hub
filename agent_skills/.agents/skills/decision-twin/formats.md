@@ -22,7 +22,7 @@
 | status | 条件 |
 | --- | --- |
 | `FACT` | リポジトリや文書に直接書いてある |
-| `EXPLICIT_DECISION` | 判断ノートの項目にそのまま書いてある |
+| `EXPLICIT_DECISION` | 判断ノートの項目にそのまま書いてある。出所が `承認` / `自動` の項目だけが根拠なら、最大 `INFERRED`（ユーザー本人の言葉ではないため） |
 | `INFERRED` | 有効な判断や原則から導ける |
 | `PROPOSAL` | 根拠はないが、answerer として案を出せる |
 | `UNKNOWN` | 根拠で決まらない。`answer` は空文字 |
@@ -51,7 +51,7 @@
 `memory/log.jsonl`（スキルフォルダ内）に、1問1行で追記する。
 
 ```json
-{"ts": "2026-11-15T10:00:00+09:00", "round": 1, "question_id": "q-1-5", "question": "一覧 API の既定ページサイズは 20 か 50 か", "class": "USER_PREFERENCE", "impact": "LOW", "reversibility": "EASY", "twin_status": "PROPOSAL", "twin_answer": "20", "confidence": 0.6, "evidence": [], "conflicts": [], "verifier": "PASS", "retries": 0, "threshold": 0.8, "isolation": "agent", "escalated": false, "escalation_rule": null, "shown_recommendation": "twin", "human_answer": "50", "overridden": true, "auto_accepted": false, "note": "api#一覧の既定ページサイズ", "replaces": []}
+{"ts": "2026-11-15T10:00:00+09:00", "round": 1, "question_id": "q-1-5", "question": "一覧 API の既定ページサイズは 20 か 50 か", "class": "USER_PREFERENCE", "impact": "LOW", "reversibility": "EASY", "twin_status": "PROPOSAL", "twin_answer": "20", "confidence": 0.6, "evidence": [], "conflicts": [], "verifier": "PASS", "retries": 0, "threshold": 0.8, "isolation": "agent", "escalated": false, "escalation_rule": null, "shown_recommendation": "twin", "human_answer": "50", "overridden": true, "auto_accepted": false, "note": "api#一覧の既定ページサイズ", "replaces": [], "replaced_text": []}
 ```
 
 | 項目 | 値 |
@@ -65,17 +65,18 @@
 | `auto_accepted` | 承認モード auto で、一覧の回答が自動確定したら `true` |
 | `note` | この質問で書いた（書き換えた）判断ノートの id。書かなければ `null` |
 | `replaces` | この質問で書き換え・削除した判断ノートの項目の id の配列 |
+| `replaced_text` | `replaces` と同じ順の、書き換え・削除前の行の文面の配列。なければ `[]` |
 
 `type` 付きの行は、代理回答の質問とは別に数える。
 
 ```json
-{"ts": "...", "type": "learning", "session": 1, "question_id": "l-1-3", "topic": "api", "question": "...", "choices": ["offset", "cursor"], "human_answer": "cursor", "note": "api#一覧のページング方式", "replaces": []}
-{"ts": "...", "type": "auto_override", "round": 2, "question_id": "q-2-4", "human_answer": "50", "note": "api#一覧の既定ページサイズ", "replaces": ["api#一覧の既定ページサイズ"]}
+{"ts": "...", "type": "learning", "session": 1, "question_id": "l-1-3", "topic": "api", "question": "...", "choices": ["offset", "cursor"], "human_answer": "cursor", "note": "api#一覧のページング方式", "replaces": [], "replaced_text": []}
+{"ts": "...", "type": "auto_override", "round": 2, "question_id": "q-2-4", "human_answer": "50", "note": "api#一覧の既定ページサイズ", "replaces": ["api#一覧の既定ページサイズ"], "replaced_text": ["- **一覧の既定ページサイズ**: 20 にする。理由: （記載なし）（2026-11-10、承認、根拠: api#一覧のページング方式）"]}
 {"ts": "...", "type": "principle_rejected", "round": 1, "text": "...", "source_note": "api#公開 API の互換維持期間"}
 ```
 
 - `learning`: 学習フローの1問。`session` は log の learning 行の最大値 + 1、`question_id` は `l-<session>-<連番>`。記録しなかった回答（「わからない」など）は `note: null`。
-- `auto_override`: auto で自動確定した回答を、後からユーザーが上書きした。
+- `auto_override`: auto で自動確定した回答を、後からユーザーが上書きした。書き換え前の行を `replaced_text` に残す。
 
 ## 表示形式
 
@@ -97,12 +98,12 @@ grilling と同じ形式で書く。各質問に、確認する理由（規則�
 | ID | 分類 | impact | status | 回答 | 根拠（日付） |
 | --- | --- | --- | --- | --- | --- |
 | q-1-1 | REPO_FACT | LOW | FACT | session 認証 | `todo_project/settings.py` |
-| q-1-4 | USER_PREFERENCE | MEDIUM | ⚠ INFERRED | cron で済ませる | principles.md L3（2026-06-12） |
+| q-1-4 | USER_PREFERENCE | MEDIUM | ⚠ INFERRED | cron で済ませる | principles#3（2026-06-12） |
 
 - `INFERRED` と `PROPOSAL` には ⚠ を付け、決定ではないと分かるようにする。
 - 根拠の日付が他の根拠より古い、または 180 日以上前なら「（古い）」と書き添える。
 
-承認モード auto では、見出しを「② 自動で確定した回答」にする。
+承認モード auto では、見出しを「② 自動で確定した回答」にする。`PROPOSAL` はこの表に入れず、同じ列の別表「承認待ちの回答」にして、承認されるまで確定しない。
 
 ### ③ 依頼
 
@@ -115,5 +116,5 @@ grilling と同じ形式で書く。各質問に、確認する理由（規則�
 承認モード auto:
 
 ```
-②の回答は確定して進めました。変えたい番号があれば「q-1-5: 50 にする」のように書いてください。いつでも上書きできます。
+②の回答は確定して進めました。変えたい番号があれば「q-1-5: 50 にする」のように書いてください。いつでも上書きできます。承認待ちの回答（ある場合）は、承認するか、変えたい番号を書いてください。
 ```

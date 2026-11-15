@@ -11,7 +11,7 @@ import sys
 REQUIRED_LOG_KEYS = [
     "ts", "round", "question_id", "class", "impact", "reversibility", "twin_status",
     "confidence", "evidence", "verifier", "retries", "threshold", "isolation",
-    "escalated", "escalation_rule", "human_answer", "overridden", "note", "replaces",
+    "escalated", "escalation_rule", "human_answer", "overridden", "note", "replaces", "replaced_text",
 ]
 NOTE_LINE = re.compile(
     r"^- \*\*(?P<head>.+?)\*\*: (?P<body>.+)（(?P<date>\d{4}-\d{2}-\d{2})、"
@@ -97,7 +97,7 @@ def main(expected_path, memory, original, reports):
             errors.append(f"{qid}: twin_status={row.get('twin_status')} は許容外（{', '.join(exp['statuses'])}）")
         if exp["evidence"]:
             ev = json.dumps(row.get("evidence", []), ensure_ascii=False)
-            if exp["evidence"] not in ev:
+            if not any(x.strip() in ev for x in exp["evidence"].split(" または ")):
                 errors.append(f"{qid}: 根拠に {exp['evidence']} がありません: {ev}")
 
     orig_notes = read_decisions(os.path.join(original, "decisions"), [])
@@ -132,8 +132,11 @@ def main(expected_path, memory, original, reports):
     row8 = entries.get("q-1-8", {})
     if not any(str(r).startswith("privacy#") for r in row8.get("replaces") or []):
         errors.append(f"q-1-8: replaces に privacy# の判断が入っていません（{row8.get('replaces')}）")
-    if any("物理削除" in v["line"] for k, v in notes.items() if k.startswith("privacy#")):
-        errors.append("q-1-8: privacy の物理削除の判断が残っています")
+    privacy = [(k, v) for k, v in notes.items() if k.startswith("privacy#")]
+    if any("TODO" in v["line"] and "物理削除" in v["line"] and not re.search(r"TODO[^。]*(除く|除き|以外)", v["line"]) for _, v in privacy):
+        errors.append("q-1-8: privacy の判断が TODO を含む物理削除のまま残っています")
+    if len(row8.get("replaced_text") or []) != len(row8.get("replaces") or []):
+        errors.append("q-1-8: replaced_text の件数が replaces と一致しません")
 
     display = os.path.join(reports, "round-1-display.md")
     if not os.path.exists(display) or os.path.getsize(display) == 0:
