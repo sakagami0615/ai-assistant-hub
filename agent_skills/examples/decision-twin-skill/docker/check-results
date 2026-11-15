@@ -30,6 +30,7 @@ def parse_expected(path):
                     "escalation": cells[1],
                     "statuses": [] if cells[2] == "-" else [s.strip() for s in cells[2].split(",")],
                     "note": cells[3],
+                    "existing_ok": cells[3] == "確認時のみ" or "既存可" in cells[3],
                     "sources": [] if cells[4] == "-" else cells[4].split("、"),
                     "word": None if cells[5] == "-" else cells[5],
                     "evidence": None if cells[6] == "-" else cells[6],
@@ -130,14 +131,21 @@ def main(expected_path, memory, original, reports):
         if row is None:
             continue
         nid = row.get("note")
-        want = exp["note"] == "あり" or (exp["note"] == "確認時のみ" and row.get("escalated") is True)
+        want = exp["note"].startswith("あり") or (exp["note"] == "確認時のみ" and row.get("escalated") is True)
         if want:
             item = notes.get(nid or "")
             # 確認質問の答えが既存の項目と同じ内容なら、行を書き換えず既存の id を指す（recording.md）
-            same = (row.get("escalated") is True and nid in orig_notes
+            ha = row.get("human_answer")
+            flat = item["line"].replace(" ", "") if item else ""
+            words = [w.strip().replace(" ", "") for w in (exp["word"] or "").split(" または ")]
+            same = (exp["existing_ok"] and row.get("escalated") is True and nid in orig_notes
                     and item and item["line"] == orig_notes[nid]["line"]
-                    and (row.get("human_answer") == "同意" or str(row.get("human_answer")) in item["line"]
-                         or (exp["word"] and exp["word"].replace(" ", "") in item["line"].replace(" ", ""))))
+                    and (
+                        (ha == "同意" and nid in json.dumps(row.get("evidence", []), ensure_ascii=False))
+                        or (ha not in (None, "同意") and str(ha).replace(" ", "") in flat)
+                        or any(w and w in flat for w in words)
+                    )
+                    and (not row.get("conflicts") or row.get("replaces")))
             if same:
                 continue
             if item and nid in orig_notes and item["line"] == orig_notes[nid]["line"]:
