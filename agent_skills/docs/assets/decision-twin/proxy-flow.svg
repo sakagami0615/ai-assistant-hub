@@ -1,0 +1,79 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1060" height="300" viewBox="0 0 1060 300" role="img" aria-label="ラウンドは準備、推奨の分離、分類、回答役、検証役、ゲート判定の順に進み、規則に当てはまった質問は確認質問としてユーザーへ、それ以外は代理回答一覧へ入る。どちらも記録されてから質問役に返る。">
+<style>
+svg { --surface:#ffffff;--ink:#1d2430;--muted:#5d6878;--line:#c9d0da;--ai:#2f5d8a;--ai-soft:#e6eef7;--human:#b26a00;--human-soft:#fdf1df;
+--font-body:"Hiragino Sans","Noto Sans JP","Noto Sans CJK JP","Yu Gothic","Meiryo",sans-serif;--font-mono:ui-monospace,"SFMono-Regular",Menlo,Consolas,monospace; color: var(--ink); }
+@media (prefers-color-scheme: dark) { svg { --surface:#1a2029;--ink:#e4e8ee;--muted:#9aa5b4;--line:#36404d;--ai:#8db6e0;--ai-soft:#1f2d3d;--human:#f0b25a;--human-soft:#3a2a14; } }
+.bg { fill: var(--surface); }
+/* SVG の部品 */
+.box { fill: var(--surface); stroke: var(--line); stroke-width: 1.5; }
+.box-ai { fill: var(--ai-soft); stroke: var(--ai); stroke-width: 1.5; }
+.box-human { fill: var(--human-soft); stroke: var(--human); stroke-width: 1.5; }
+.frame { fill: none; stroke: var(--line); stroke-width: 1.5; stroke-dasharray: 6 4; }
+.t { fill: currentColor; font-size: 13px; font-family: var(--font-body); }
+.t-b { fill: currentColor; font-size: 14px; font-weight: 700; font-family: var(--font-body); }
+.t-s { fill: var(--muted); font-size: 12px; font-family: var(--font-body); }
+.t-m { fill: var(--muted); font-size: 12px; font-family: var(--font-mono); }
+.t-ai { fill: var(--ai); font-size: 12px; font-family: var(--font-body); }
+.t-h { fill: var(--human); font-size: 12px; font-weight: 500; font-family: var(--font-body); }
+.ln { stroke: currentColor; stroke-width: 1.4; fill: none; }
+.ln-ai { stroke: var(--ai); stroke-width: 1.4; fill: none; }
+.ln-h { stroke: var(--human); stroke-width: 1.8; fill: none; }
+.head { fill: currentColor; }
+.head-ai { fill: var(--ai); }
+.head-h { fill: var(--human); }
+</style>
+<rect class="bg" width="1060" height="300" rx="8"/>
+  <defs>
+    <marker id="a2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" class="head"/></marker>
+    <marker id="a2h" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" class="head-h"/></marker>
+  </defs>
+  <!-- 1行目 -->
+  <rect x="45" y="30" width="140" height="66" rx="6" class="box"/>
+  <text x="115" y="57" text-anchor="middle" class="t-b">1 準備</text>
+  <text x="115" y="79" text-anchor="middle" class="t-s">モード・しきい値</text>
+  <rect x="211" y="30" width="140" height="66" rx="6" class="box"/>
+  <text x="281" y="57" text-anchor="middle" class="t-b">2 受け取る</text>
+  <text x="281" y="79" text-anchor="middle" class="t-s">推奨を切り離す</text>
+  <rect x="377" y="30" width="140" height="66" rx="6" class="box"/>
+  <text x="447" y="57" text-anchor="middle" class="t-b">3 分類</text>
+  <text x="447" y="79" text-anchor="middle" class="t-s">迷ったら厳しい側</text>
+  <rect x="543" y="30" width="140" height="66" rx="6" class="box-ai"/>
+  <text x="613" y="57" text-anchor="middle" class="t-b">4 answerer</text>
+  <text x="613" y="79" text-anchor="middle" class="t-s">根拠付きで回答</text>
+  <rect x="709" y="30" width="140" height="66" rx="6" class="box-ai"/>
+  <text x="779" y="57" text-anchor="middle" class="t-b">5 verifier</text>
+  <text x="779" y="79" text-anchor="middle" class="t-s">再試行は1回まで</text>
+  <rect x="875" y="30" width="140" height="66" rx="6" class="box"/>
+  <text x="945" y="57" text-anchor="middle" class="t-b">6 ゲート</text>
+  <text x="945" y="79" text-anchor="middle" class="t-s">7規則を上から</text>
+  <line x1="185" y1="63" x2="209" y2="63" class="ln" marker-end="url(#a2)"/>
+  <line x1="351" y1="63" x2="375" y2="63" class="ln" marker-end="url(#a2)"/>
+  <line x1="517" y1="63" x2="541" y2="63" class="ln" marker-end="url(#a2)"/>
+  <line x1="683" y1="63" x2="707" y2="63" class="ln" marker-end="url(#a2)"/>
+  <line x1="849" y1="63" x2="873" y2="63" class="ln" marker-end="url(#a2)"/>
+
+  <!-- 分岐 -->
+  <polyline points="945,96 945,130 195,130 195,166" class="ln-h" marker-end="url(#a2h)"/>
+  <polyline points="530,130 530,166" class="ln" marker-end="url(#a2)"/>
+  <text x="205" y="153" class="t-h">規則に当てはまる</text>
+  <text x="540" y="153" class="t-s">どれにも当てはまらない</text>
+
+  <!-- 2行目 -->
+  <rect x="45" y="168" width="300" height="82" rx="6" class="box-human"/>
+  <text x="195" y="196" text-anchor="middle" class="t-b">① 確認質問</text>
+  <text x="195" y="218" text-anchor="middle" class="t">どちらのモードでも必ずユーザーに聞く</text>
+  <text x="195" y="238" text-anchor="middle" class="t-s">推奨には出所を付けて表示</text>
+  <rect x="380" y="168" width="300" height="82" rx="6" class="box"/>
+  <text x="530" y="196" text-anchor="middle" class="t-b">② 代理回答一覧</text>
+  <text x="530" y="218" text-anchor="middle" class="t">require：承認されるまで確定しない</text>
+  <text x="530" y="238" text-anchor="middle" class="t">auto：自動確定（PROPOSAL などは承認待ち）</text>
+  <rect x="715" y="168" width="300" height="82" rx="6" class="box"/>
+  <text x="865" y="196" text-anchor="middle" class="t-b">8 記録 → 9 質問役に返す</text>
+  <text x="865" y="218" text-anchor="middle" class="t">全問を log に1行ずつ</text>
+  <text x="865" y="238" text-anchor="middle" class="t-s">保留は未決のまま返す</text>
+
+  <polyline points="195,250 195,280 845,280 845,252" class="ln-h" marker-end="url(#a2h)"/>
+  <polyline points="530,250 530,280" class="ln"/>
+  <text x="360" y="273" text-anchor="middle" class="t-h">ユーザーの回答</text>
+  <text x="690" y="273" text-anchor="middle" class="t-s">承認・上書き・自動確定</text>
+</svg>

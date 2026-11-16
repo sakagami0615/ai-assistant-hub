@@ -1,0 +1,77 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="300" viewBox="0 0 1000 300" role="img" aria-label="ユーザーが自分の言葉で答えた、一覧を上書きした、学習フローで答えた判断は次回 EXPLICIT_DECISION の根拠になる。同意だけ、一覧の承認、auto の自動確定は出所が承認か自動になり、それだけを根拠にした回答は INFERRED までに制限される。">
+<style>
+svg { --surface:#ffffff;--ink:#1d2430;--muted:#5d6878;--line:#c9d0da;--ai:#2f5d8a;--ai-soft:#e6eef7;--human:#b26a00;--human-soft:#fdf1df;
+--font-body:"Hiragino Sans","Noto Sans JP","Noto Sans CJK JP","Yu Gothic","Meiryo",sans-serif;--font-mono:ui-monospace,"SFMono-Regular",Menlo,Consolas,monospace; color: var(--ink); }
+@media (prefers-color-scheme: dark) { svg { --surface:#1a2029;--ink:#e4e8ee;--muted:#9aa5b4;--line:#36404d;--ai:#8db6e0;--ai-soft:#1f2d3d;--human:#f0b25a;--human-soft:#3a2a14; } }
+.bg { fill: var(--surface); }
+/* SVG の部品 */
+.box { fill: var(--surface); stroke: var(--line); stroke-width: 1.5; }
+.box-ai { fill: var(--ai-soft); stroke: var(--ai); stroke-width: 1.5; }
+.box-human { fill: var(--human-soft); stroke: var(--human); stroke-width: 1.5; }
+.frame { fill: none; stroke: var(--line); stroke-width: 1.5; stroke-dasharray: 6 4; }
+.t { fill: currentColor; font-size: 13px; font-family: var(--font-body); }
+.t-b { fill: currentColor; font-size: 14px; font-weight: 700; font-family: var(--font-body); }
+.t-s { fill: var(--muted); font-size: 12px; font-family: var(--font-body); }
+.t-m { fill: var(--muted); font-size: 12px; font-family: var(--font-mono); }
+.t-ai { fill: var(--ai); font-size: 12px; font-family: var(--font-body); }
+.t-h { fill: var(--human); font-size: 12px; font-weight: 500; font-family: var(--font-body); }
+.ln { stroke: currentColor; stroke-width: 1.4; fill: none; }
+.ln-ai { stroke: var(--ai); stroke-width: 1.4; fill: none; }
+.ln-h { stroke: var(--human); stroke-width: 1.8; fill: none; }
+.head { fill: currentColor; }
+.head-ai { fill: var(--ai); }
+.head-h { fill: var(--human); }
+</style>
+<rect class="bg" width="1000" height="300" rx="8"/>
+  <defs>
+    <marker id="a3" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" class="head"/></marker>
+    <marker id="a3h" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" class="head-h"/></marker>
+  </defs>
+  <text x="20" y="24" class="t-s">ユーザーの返し方</text>
+  <text x="420" y="24" class="t-s">判断ノートの出所</text>
+  <text x="700" y="24" class="t-s">次のラウンドで付けられる最大の status</text>
+
+  <!-- 強い根拠 -->
+  <rect x="20" y="40" width="320" height="38" rx="6" class="box"/>
+  <text x="36" y="64" class="t">自分の言葉で答えた（確認質問）</text>
+  <rect x="20" y="88" width="320" height="38" rx="6" class="box"/>
+  <text x="36" y="112" class="t">一覧の代理回答を別の答えに変えた</text>
+  <rect x="20" y="136" width="320" height="38" rx="6" class="box"/>
+  <text x="36" y="160" class="t">学習フローで答えた</text>
+  <rect x="420" y="40" width="200" height="38" rx="6" class="box"/>
+  <text x="520" y="64" text-anchor="middle" class="t-b">回答</text>
+  <rect x="420" y="88" width="200" height="38" rx="6" class="box"/>
+  <text x="520" y="112" text-anchor="middle" class="t-b">上書き</text>
+  <rect x="420" y="136" width="200" height="38" rx="6" class="box"/>
+  <text x="520" y="160" text-anchor="middle" class="t-b">学習</text>
+  <line x1="340" y1="59" x2="418" y2="59" class="ln" marker-end="url(#a3)"/>
+  <line x1="340" y1="107" x2="418" y2="107" class="ln" marker-end="url(#a3)"/>
+  <line x1="340" y1="155" x2="418" y2="155" class="ln" marker-end="url(#a3)"/>
+  <polyline points="620,107 680,107" class="ln"/>
+  <line x1="620" y1="59" x2="680" y2="59" class="ln"/>
+  <line x1="620" y1="155" x2="680" y2="155" class="ln"/>
+  <polyline points="680,59 680,155" class="ln"/>
+  <line x1="680" y1="107" x2="698" y2="107" class="ln" marker-end="url(#a3)"/>
+  <rect x="700" y="84" width="280" height="46" rx="6" class="box-ai"/>
+  <text x="840" y="112" text-anchor="middle" class="t-b">EXPLICIT_DECISION</text>
+
+  <!-- 弱い根拠 -->
+  <line x1="20" y1="196" x2="980" y2="196" class="ln" style="stroke: var(--line); stroke-dasharray: 4 4"/>
+  <rect x="20" y="212" width="320" height="38" rx="6" class="box-human"/>
+  <text x="36" y="236" class="t">「同意」だけ・一覧をまとめて承認</text>
+  <rect x="20" y="258" width="320" height="38" rx="6" class="box-human"/>
+  <text x="36" y="282" class="t">auto で自動確定した</text>
+  <rect x="420" y="212" width="200" height="38" rx="6" class="box-human"/>
+  <text x="520" y="236" text-anchor="middle" class="t-b">承認</text>
+  <rect x="420" y="258" width="200" height="38" rx="6" class="box-human"/>
+  <text x="520" y="282" text-anchor="middle" class="t-b">自動</text>
+  <line x1="340" y1="231" x2="418" y2="231" class="ln-h" marker-end="url(#a3h)"/>
+  <line x1="340" y1="277" x2="418" y2="277" class="ln-h" marker-end="url(#a3h)"/>
+  <line x1="620" y1="231" x2="680" y2="231" class="ln-h"/>
+  <line x1="620" y1="277" x2="680" y2="277" class="ln-h"/>
+  <polyline points="680,231 680,277" class="ln-h"/>
+  <line x1="680" y1="254" x2="698" y2="254" class="ln-h" marker-end="url(#a3h)"/>
+  <rect x="700" y="231" width="280" height="46" rx="6" class="box-human"/>
+  <text x="840" y="252" text-anchor="middle" class="t-b">INFERRED まで</text>
+  <text x="840" y="270" text-anchor="middle" class="t-h">auto でも自動確定せず承認待ち</text>
+</svg>
