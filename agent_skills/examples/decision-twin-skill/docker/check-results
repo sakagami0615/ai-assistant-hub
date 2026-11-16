@@ -1,0 +1,210 @@
+#!/usr/bin/env python3
+"""decision-twin の実行結果を assets/expected-round.md と照合する。
+
+使い方: check-results <expected-round.md> <実行後の memory> <元の memory> <reports dir>
+"""
+import json
+import os
+import re
+import sys
+
+REQUIRED_LOG_KEYS = [
+    "ts", "round", "question_id", "class", "impact", "reversibility", "twin_status",
+    "confidence", "evidence", "verifier", "retries", "threshold", "isolation",
+    "escalated", "escalation_rule", "human_answer", "overridden", "note", "replaces", "replaced_text",
+    "twin_answer", "question", "conflicts", "shown_recommendation", "auto_accepted",
+]
+NOTE_LINE = re.compile(
+    r"^- \*\*(?P<head>.+?)\*\*: (?P<body>.+)（(?P<date>\d{4}-\d{2}-\d{2})、"
+    r"(?P<src>回答|上書き|承認|自動|学習)(?:、根拠: (?P<ev>[^）]+))?）$"
+)
+
+
+def parse_expected(path):
+    rows = {}
+    with open(path, encoding="utf-8") as f:
+        for line in f:
+            cells = [c.strip() for c in line.strip().strip("|").split("|")]
+            if len(cells) >= 7 and re.fullmatch(r"q-\d+-\d+", cells[0]):
+                rows[cells[0]] = {
+                    "escalation": cells[1],
+                    "statuses": [] if cells[2] == "-" else [s.strip() for s in cells[2].split(",")],
+                    "note": cells[3],
+                    "existing_ok": cells[3] == "確認時のみ" or "既存可" in cells[3],
+                    "sources": [] if cells[4] == "-" else cells[4].split("、"),
+                    "word": None if cells[5] == "-" else cells[5],
+                    "evidence": None if cells[6] == "-" else cells[6],
+                }
+    return rows
+
+
+def read_decisions(decisions, errors):
+    """memory/decisions の判断ノートを読み、id → 項目の辞書を返す。"""
+    notes = {}
+    for name in sorted(os.listdir(decisions)):
+        if not name.endswith(".md"):
+            continue
+        with open(os.path.join(decisions, name), encoding="utf-8") as f:
+            text = f.read()
+        topic = name[:-3]
+        for n, line in enumerate(text.splitlines(), 1):
+            if not line.startswith("- "):
+                continue
+            m = NOTE_LINE.match(line)
+            if not m:
+                errors.append(f"{name} {n}行目が判断ノートの書式ではありません: {line}")
+                continue
+            nid = f"{topic}#{m.group('head')}"
+            if nid in notes:
+                errors.append(f"{name}: 見出し「{m.group('head')}」が重複しています")
+            notes[nid] = {"src": m.group("src"), "line": line}
+    return notes
+
+
+def main(expected_path, memory, original, reports):
+    errors, warnings = [], []
+    expected = parse_expected(expected_path)
+
+    log_path = os.path.join(memory, "log.jsonl")
+    entries = {}
+    if not os.path.exists(log_path):
+        errors.append("log.jsonl がありません")
+    else:
+        with open(log_path, encoding="utf-8") as f:
+            for n, line in enumerate(f, 1):
+                if not line.strip():
+                    continue
+                try:
+                    row = json.loads(line)
+                except json.JSONDecodeError:
+                    errors.append(f"log.jsonl {n}行目が JSON ではありません")
+                    continue
+                if "question_id" not in row or "type" in row:
+                    continue
+                if row["question_id"] in entries:
+                    errors.append(f"{row['question_id']} の行が重複しています")
+                entries[row["question_id"]] = row
+
+    for qid, exp in expected.items():
+        row = entries.get(qid)
+        if row is None:
+            errors.append(f"{qid} の log 行がありません")
+            continue
+        missing = [k for k in REQUIRED_LOG_KEYS if k not in row]
+        if missing:
+            errors.append(f"{qid}: log の項目が足りません: {', '.join(missing)}")
+        if exp["escalation"] == "必須" and row.get("escalated") is not True:
+            errors.append(f"{qid}: 確認質問にすべきなのに escalated={row.get('escalated')}")
+        if exp["escalation"] == "しない" and row.get("escalated") is not False:
+            warnings.append(f"{qid}: 代理回答一覧に入る想定だが escalated={row.get('escalated')}（規則{row.get('escalation_rule')}）")
+        if exp["statuses"] and row.get("twin_status") not in exp["statuses"]:
+            errors.append(f"{qid}: twin_status={row.get('twin_status')} は許容外（{', '.join(exp['statuses'])}）")
+        if exp["evidence"]:
+            ev = json.dumps(row.get("evidence", []), ensure_ascii=False)
+            if not any(x.strip() in ev for x in exp["evidence"].split(" または ")):
+                errors.append(f"{qid}: 根拠に {exp['evidence']} がありません: {ev}")
+
+    orig_notes = read_decisions(os.path.join(original, "decisions"), [])
+    notes = read_decisions(os.path.join(memory, "decisions"), errors)
+
+    replaced = set()
+    for row in entries.values():
+        replaced.update(row.get("replaces") or [])
+    for nid in orig_notes:
+        if nid not in notes and nid not in replaced:
+            errors.append(f"元の判断 {nid} が replaces なしで消えています")
+
+    # 書き換え・削除した項目は、元の行が replaced_text にそのまま残り、書き換え後は別の文面になっている
+    for qid, row in entries.items():
+        ids, texts = row.get("replaces") or [], row.get("replaced_text") or []
+        if len(ids) != len(texts):
+            errors.append(f"{qid}: replaced_text の件数が replaces と一致しません")
+            continue
+        for nid, text in zip(ids, texts):
+            if nid in orig_notes and text.strip() != orig_notes[nid]["line"].strip():
+                errors.append(f"{qid}: replaced_text が元の行と一致しません: {nid}")
+            if nid in orig_notes and nid in notes and notes[nid]["line"] == orig_notes[nid]["line"]:
+                errors.append(f"{qid}: {nid} は replaces に入っているのに行が書き換わっていません")
+
+    for qid, exp in expected.items():
+        row = entries.get(qid)
+        if row is None:
+            continue
+        nid = row.get("note")
+        want = exp["note"].startswith("あり") or (exp["note"] == "確認時のみ" and row.get("escalated") is True)
+        if want:
+            item = notes.get(nid or "")
+            # 確認質問の答えが既存の項目と同じ内容なら、行を書き換えず既存の id を指す（recording.md）
+            ha = row.get("human_answer")
+            flat = item["line"].replace(" ", "") if item else ""
+            words = [w.strip().replace(" ", "") for w in (exp["word"] or "").split(" または ")]
+            same = (exp["existing_ok"] and row.get("escalated") is True and nid in orig_notes
+                    and item and item["line"] == orig_notes[nid]["line"]
+                    and (
+                        (ha == "同意" and nid in json.dumps(row.get("evidence", []), ensure_ascii=False))
+                        or (ha not in (None, "同意") and str(ha).replace(" ", "") in flat)
+                        or any(w and w in flat for w in words)
+                    )
+                    and (not row.get("conflicts") or row.get("replaces")))
+            if same:
+                continue
+            if item and nid in orig_notes and item["line"] == orig_notes[nid]["line"]:
+                errors.append(f"{qid}: note={nid} は元のままで、この質問で書かれた項目ではありません")
+            if not nid:
+                errors.append(f"{qid}: 判断ノートが書かれていません（note が空）")
+            elif item is None:
+                errors.append(f"{qid}: note={nid} の項目が判断ノートにありません")
+            else:
+                sources = exp["sources"]
+                if qid == "q-1-5":
+                    sources = ["回答"] if row.get("escalated") else ["上書き"]
+                    if row.get("escalated") is False and row.get("overridden") is not True:
+                        errors.append("q-1-5: 一覧で上書きしたのに overridden が true ではありません")
+                if sources and item["src"] not in sources:
+                    errors.append(f"{qid}: 出所は {'、'.join(sources)} であるべきです（{item['src']}）")
+                if exp["word"] and not any(w.strip().replace(" ", "") in item["line"].replace(" ", "") for w in exp["word"].split(" または ")):
+                    errors.append(f"{qid}: 判断ノートの項目に「{exp['word']}」がありません: {item['line']}")
+        elif nid:
+            errors.append(f"{qid}: 書くべきでない判断ノートの項目があります: {nid}")
+
+    if entries.get("q-1-4", {}).get("human_answer") is not None:
+        errors.append("q-1-4: 保留したのに human_answer が null ではありません")
+
+    row8 = entries.get("q-1-8", {})
+    excl = re.compile(r"TODO[^。]*(除く|除き|以外)")
+    privacy = [v["line"] for k, v in notes.items() if k.startswith("privacy#")]
+    if not privacy:
+        errors.append("q-1-8: privacy の判断が丸ごと消えています（範囲を絞る書き換えにするべきです）")
+    elif not any(excl.search(line) for line in privacy):
+        errors.append("q-1-8: privacy の判断に TODO を範囲から除く表現がありません")
+    if any("TODO" in line and "物理削除" in line and not excl.search(line) for line in privacy):
+        errors.append("q-1-8: privacy の判断が TODO を含む物理削除のまま残っています")
+    if not any(str(x).startswith("privacy#") for x in row8.get("replaces") or []):
+        errors.append(f"q-1-8: replaces に privacy# の判断が入っていません（{row8.get('replaces')}）")
+
+    display = os.path.join(reports, "round-1-display.md")
+    if not os.path.exists(display) or os.path.getsize(display) == 0:
+        errors.append("reports/round-1-display.md がありません")
+
+    with open(os.path.join(original, "principles.md"), encoding="utf-8") as f:
+        before = f.read()
+    with open(os.path.join(memory, "principles.md"), encoding="utf-8") as f:
+        after = f.read()
+    if not after.startswith(before.rstrip("\n")):
+        errors.append("principles.md の既存の行が変更されています")
+    elif after.strip() == before.strip():
+        warnings.append("principles.md に原則が追記されていません（q-1-6 の理由から追記案が出る想定）")
+
+    for w in warnings:
+        print(f"WARN: {w}")
+    for e in errors:
+        print(f"FAIL: {e}")
+    print(f"結果: {'NG' if errors else 'OK'}（失敗 {len(errors)} 件、警告 {len(warnings)} 件）")
+    return 1 if errors else 0
+
+
+if __name__ == "__main__":
+    if len(sys.argv) != 5:
+        print(__doc__.strip(), file=sys.stderr)
+        sys.exit(2)
+    sys.exit(main(*sys.argv[1:]))
